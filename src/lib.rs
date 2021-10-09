@@ -1,6 +1,9 @@
 mod utils;
 
-use utils::{gauss_seidel, val_after_diff, DiffLinearEquationArgs, LinearEquation, PropertyType};
+use utils::{
+    gauss_seidel, val_after_diff, DiffLinearEquationArgs, GaussSeidelFunction, LinearEquation,
+    PropertyType,
+};
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -52,61 +55,45 @@ impl Fluid {
         }
     }
 
-    // fn val_after_diff(&self, x: u16, y: u16, property: &PropertyType) -> LinearEquation<f64> {
-    //     |surrounding_property_values: PropertyType| -> f64 {
-    //         let k = self.config.dt * self.config.diffusion;
-    //         (property[self.ix(x, y) as usize]
-    //             + (k * (surrounding_property_values[0]
-    //                 + surrounding_property_values[1]
-    //                 + surrounding_property_values[2]
-    //                 + surrounding_property_values[3]))
-    //                 / 4.0)
-    //             / (1.0 + k)
-    //     }
-    // }
     fn diffuse(&self, x: u16, y: u16, property: &PropertyType) -> f64 {
         let k = self.config.dt * self.config.diffusion;
-        // val_after_diff(x, y, property)(&gauss_seidel(
-        //     vec![a, a, a, a],
-        //     vec![0.0, 0.0, 0.0, 0.0],
-        //     10,
-        //     vec![
-        //         DiffLinearEquationArgs::new(property[self.ix(x + 1, y) as usize], k),
-        //         DiffLinearEquationArgs::new(property[self.ix(x - 1, y) as usize], k),
-        //         DiffLinearEquationArgs::new(property[self.ix(x, y + 1) as usize], k),
-        //         DiffLinearEquationArgs::new(property[self.ix(x, y - 1) as usize], k),
-        //     ],
-        // ))
+
+        let val_after_diff_ptr: LinearEquation<DiffLinearEquationArgs> = val_after_diff;
+
+        let gauss_seidel_fn1 = GaussSeidelFunction::new(
+            val_after_diff_ptr,
+            DiffLinearEquationArgs::new(property[self.ix(x + 1, y) as usize], k),
+        );
+
+        let gauss_seidel_fn2 = GaussSeidelFunction::new(
+            val_after_diff_ptr,
+            DiffLinearEquationArgs::new(property[self.ix(x - 1, y) as usize], k),
+        );
+
+        let gauss_seidel_fn3 = GaussSeidelFunction::new(
+            val_after_diff_ptr,
+            DiffLinearEquationArgs::new(property[self.ix(x, y + 1) as usize], k),
+        );
+
+        let gauss_seidel_fn4 = GaussSeidelFunction::new(
+            val_after_diff_ptr,
+            DiffLinearEquationArgs::new(property[self.ix(x, y - 1) as usize], k),
+        );
+
+        let surrounding_values = gauss_seidel(
+            vec![
+                gauss_seidel_fn1,
+                gauss_seidel_fn2,
+                gauss_seidel_fn3,
+                gauss_seidel_fn4,
+            ],
+            vec![0.0, 0.0, 0.0, 0.0],
+            10,
+        );
+
         val_after_diff(
-            gauss_seidel(
-                vec![
-                    val_after_diff,
-                    val_after_diff,
-                    val_after_diff,
-                    val_after_diff,
-                ],
-                vec![0.0, 0.0, 0.0, 0.0],
-                10,
-                vec![
-                    Some(DiffLinearEquationArgs::new(
-                        property[self.ix(x + 1, y) as usize],
-                        k,
-                    )),
-                    Some(DiffLinearEquationArgs::new(
-                        property[self.ix(x - 1, y) as usize],
-                        k,
-                    )),
-                    Some(DiffLinearEquationArgs::new(
-                        property[self.ix(x, y + 1) as usize],
-                        k,
-                    )),
-                    Some(DiffLinearEquationArgs::new(
-                        property[self.ix(x, y - 1) as usize],
-                        k,
-                    )),
-                ],
-            ),
-            DiffLinearEquationArgs::new(property[self.ix(x, y) as usize], k),
+            &surrounding_values,
+            &DiffLinearEquationArgs::new(property[self.ix(x, y) as usize], k),
         )
     }
 }
