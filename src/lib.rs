@@ -111,10 +111,14 @@ impl Fluid {
             self.size as usize,
             self.config.dt
         );
+        // self.diffusion_step(&self.density, &self.initial_density);
     }
 
-    // Eposed methods
-    // pub fn get_density_at_x_y(&self, x: u16, y: u16) -> f64 {
-    //     self.density[self.ix(x, y) as usize]
-    // }
+    pub fn get_density_at_x_y(&self, x: u16, y: u16) -> f64 {
+        self.density[self.ix(x, y) as usize]
+    }
+
+    pub fn simulate(&mut self) {
+        self.density_step();
+    }
 }

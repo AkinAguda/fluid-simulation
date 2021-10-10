@@ -94,6 +94,13 @@ macro_rules! add_source {
     };
 }
 
+// #[macro_export]
+// macro_rules! swap {
+//     ($vector_1, $vector_2) => {
+
+//     };
+// }
+
 #[cfg(test)]
 mod tests {
     use super::*;
