@@ -1,8 +1,7 @@
 mod utils;
 
 use utils::{
-    gauss_seidel, val_after_diff, DiffLinearEquationArgs, GaussSeidelFunction, LinearEquation,
-    PropertyType,
+    gauss_seidel, val_after_diff, DiffLinearEquationArgs, GaussSeidelFunction, PropertyType,
 };
 use wasm_bindgen::prelude::*;
 
@@ -93,5 +92,14 @@ impl Fluid {
             &surrounding_values,
             &DiffLinearEquationArgs::new(property[self.ix(x, y) as usize], k),
         )
+    }
+
+    fn diffusion_step(&self, property: &mut PropertyType, initial_property: &PropertyType) {
+        for i in 1..self.config.n + 1 {
+            for j in 1..self.config.n + 1 {
+                let index = self.ix(i, j) as usize;
+                property[index] = self.diffuse(i, j, initial_property);
+            }
+        }
     }
 }
