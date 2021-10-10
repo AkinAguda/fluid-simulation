@@ -58,25 +58,23 @@ impl Fluid {
     fn diffuse(&self, x: u16, y: u16, property: &PropertyType) -> f64 {
         let k = self.config.dt * self.config.diffusion;
 
-        let val_after_diff_ptr: LinearEquation<DiffLinearEquationArgs> = val_after_diff;
-
         let gauss_seidel_fn1 = GaussSeidelFunction::new(
-            val_after_diff_ptr,
+            val_after_diff,
             DiffLinearEquationArgs::new(property[self.ix(x + 1, y) as usize], k),
         );
 
         let gauss_seidel_fn2 = GaussSeidelFunction::new(
-            val_after_diff_ptr,
+            val_after_diff,
             DiffLinearEquationArgs::new(property[self.ix(x - 1, y) as usize], k),
         );
 
         let gauss_seidel_fn3 = GaussSeidelFunction::new(
-            val_after_diff_ptr,
+            val_after_diff,
             DiffLinearEquationArgs::new(property[self.ix(x, y + 1) as usize], k),
         );
 
         let gauss_seidel_fn4 = GaussSeidelFunction::new(
-            val_after_diff_ptr,
+            val_after_diff,
             DiffLinearEquationArgs::new(property[self.ix(x, y - 1) as usize], k),
         );
 
