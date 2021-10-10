@@ -19,27 +19,38 @@ pub struct FluidConfig {
 }
 
 #[wasm_bindgen]
+impl FluidConfig {
+    pub fn new(n: u16, dt: f64, diffusion: f64) -> FluidConfig {
+        FluidConfig { n, dt, diffusion }
+    }
+    pub fn set_dt(&mut self, dt: f64) {
+        self.dt = dt
+    }
+}
+
+#[wasm_bindgen]
 pub struct Fluid {
     config: FluidConfig,
-    velocity_x: PropertyType,
-    velocityY: PropertyType,
-    initial_velocity_x: PropertyType,
-    initial_velocityY: PropertyType,
+    // velocity_x: PropertyType,
+    // velocityY: PropertyType,
+    // initial_velocity_x: PropertyType,
+    // initial_velocityY: PropertyType,
     density: PropertyType,
     initial_density: PropertyType,
     size: u16,
 }
 
+#[wasm_bindgen]
 impl Fluid {
     pub fn new(config: FluidConfig) -> Fluid {
         let size = (config.n + 2) * (config.n + 2);
         let vector_size = size.into();
         Fluid {
             config,
-            velocity_x: vec![0.0; vector_size],
-            velocityY: vec![0.0; vector_size],
-            initial_velocity_x: vec![0.0; vector_size],
-            initial_velocityY: vec![0.0; vector_size],
+            // velocity_x: vec![0.0; vector_size],
+            // velocityY: vec![0.0; vector_size],
+            // initial_velocity_x: vec![0.0; vector_size],
+            // initial_velocityY: vec![0.0; vector_size],
             density: vec![0.0; vector_size],
             initial_density: vec![0.0; vector_size],
             size,
@@ -105,17 +116,25 @@ impl Fluid {
     }
 
     fn density_step(&mut self) {
-        add_source!(
-            self.density,
-            &self.initial_density,
-            self.size as usize,
-            self.config.dt
-        );
+        // add_source!(
+        //     self.density,
+        //     &self.initial_density,
+        //     self.size as usize,
+        //     self.config.dt
+        // );
         // self.diffusion_step(&self.density, &self.initial_density);
     }
 
-    pub fn get_density_at_x_y(&self, x: u16, y: u16) -> f64 {
-        self.density[self.ix(x, y) as usize]
+    pub fn get_density_at_index(&self, index: usize) -> f64 {
+        self.density[index]
+    }
+
+    pub fn get_n(&self) -> u16 {
+        self.config.n
+    }
+
+    pub fn get_size(&self) -> u16 {
+        self.size
     }
 
     pub fn simulate(&mut self) {
