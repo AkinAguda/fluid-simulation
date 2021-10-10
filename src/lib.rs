@@ -48,11 +48,11 @@ impl Fluid {
     fn ix(&self, x: u16, y: u16) -> u16 {
         x + (self.config.n + 2) * y
     }
-    fn add_source(&self, property: &mut PropertyType, initial_property: &PropertyType) {
-        for index in 0..self.size as usize {
-            property[index] += self.config.dt * initial_property[index]
-        }
-    }
+    // fn add_source(&self, property: &mut PropertyType, initial_property: &PropertyType) {
+    //     for index in 0..self.size as usize {
+    //         property[index] += self.config.dt * initial_property[index]
+    //     }
+    // }
 
     fn diffuse(&self, x: u16, y: u16, property: &PropertyType) -> f64 {
         let k = self.config.dt * self.config.diffusion;
@@ -101,5 +101,18 @@ impl Fluid {
                 property[index] = self.diffuse(i, j, initial_property);
             }
         }
+    }
+
+    fn density_step(&mut self) {
+        let mut density = &self.density;
+
+        // Add source
+        for index in 0..self.size as usize {
+            self.density[index] += self.config.dt * self.initial_density[index]
+        }
+    }
+
+    fn get_density_at_index(&self, index: usize) -> f64 {
+        self.density[index]
     }
 }
