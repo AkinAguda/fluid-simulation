@@ -85,6 +85,15 @@ pub fn val_after_diff(
         / (1.0 + args.k)
 }
 
+#[macro_export]
+macro_rules! add_source {
+    ($property:expr, $initial_property:expr, $size:expr, $dt:expr) => {
+        for index in 0..$size {
+            $property[index] += $dt * $initial_property[index]
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
