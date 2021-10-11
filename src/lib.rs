@@ -14,23 +14,20 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 #[wasm_bindgen]
 pub struct FluidConfig {
     n: u16,
-    dt: f64,
     diffusion: f64,
 }
 
 #[wasm_bindgen]
 impl FluidConfig {
-    pub fn new(n: u16, dt: f64, diffusion: f64) -> FluidConfig {
-        FluidConfig { n, dt, diffusion }
-    }
-    pub fn set_dt(&mut self, dt: f64) {
-        self.dt = dt
+    pub fn new(n: u16, diffusion: f64) -> FluidConfig {
+        FluidConfig { n, diffusion }
     }
 }
 
 #[wasm_bindgen]
 pub struct Fluid {
     config: FluidConfig,
+    dt: f64,
     // velocity_x: PropertyType,
     // velocityY: PropertyType,
     // initial_velocity_x: PropertyType,
@@ -42,11 +39,12 @@ pub struct Fluid {
 
 #[wasm_bindgen]
 impl Fluid {
-    pub fn new(config: FluidConfig) -> Fluid {
+    pub fn new(config: FluidConfig, dt: f64) -> Fluid {
         let size = (config.n + 2) * (config.n + 2);
         let vector_size = size.into();
         Fluid {
             config,
+            dt,
             // velocity_x: vec![0.0; vector_size],
             // velocityY: vec![0.0; vector_size],
             // initial_velocity_x: vec![0.0; vector_size],
@@ -62,12 +60,12 @@ impl Fluid {
 
     fn add_source(&self, property: &mut PropertyType, initial_property: &PropertyType) {
         for index in 0..self.size as usize {
-            property[index] += self.config.dt * initial_property[index]
+            property[index] += self.dt * initial_property[index]
         }
     }
 
     fn diffuse(&self, x: u16, y: u16, property: &PropertyType) -> f64 {
-        let k = self.config.dt * self.config.diffusion;
+        let k = self.dt * self.config.diffusion;
 
         let gauss_seidel_fn1 = GaussSeidelFunction::new(
             val_after_diff,
@@ -120,7 +118,7 @@ impl Fluid {
         //     self.density,
         //     &self.initial_density,
         //     self.size as usize,
-        //     self.config.dt
+        //     self.dt
         // );
         // self.diffusion_step(&self.density, &self.initial_density);
     }
@@ -137,7 +135,7 @@ impl Fluid {
         self.size
     }
 
-    pub fn simulate(&mut self) {
-        self.density_step();
+    pub fn set_dt(&mut self, dt: f64) {
+        self.dt = dt
     }
 }

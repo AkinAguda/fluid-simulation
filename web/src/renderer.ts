@@ -1,4 +1,4 @@
-import { Fluid } from "fluid";
+import { Fluid, FluidConfig } from "fluid";
 import {
   createProgram,
   createShader,
@@ -7,13 +7,14 @@ import {
 } from "./utils";
 
 export default class Renderer {
-  canvas: HTMLCanvasElement;
-  gl: WebGLRenderingContext;
-  resetButton: HTMLButtonElement;
-  vertices: Float32Array;
-  fluid: Fluid;
-  densityPerVertex: Float32Array;
-  webglData: {
+  private canvas: HTMLCanvasElement;
+  private gl: WebGLRenderingContext;
+  private resetButton: HTMLButtonElement;
+  private vertices: Float32Array;
+  private fluid: Fluid;
+  private densityPerVertex: Float32Array;
+  private then = 0;
+  private webglData: {
     locations: {
       positionAttributeLocation: number | null;
       densityAttributeLocation: number | null;
@@ -46,10 +47,10 @@ export default class Renderer {
         densityBuffer: null,
       },
     };
-    this.initializeWEBGL();
+    this.initializeWebGL();
   }
 
-  private initializeWEBGL() {
+  private initializeWebGL() {
     const vsGLSL: string = `
     attribute vec2 a_position;
     attribute float a_density;
@@ -152,7 +153,7 @@ export default class Renderer {
     }
   }
 
-  render() {
+  private render() {
     let n = this.fluid.get_n();
     const ix = (x: number, y: number) => x + (n + 2) * y;
     let size = this.fluid.get_size();
@@ -164,7 +165,6 @@ export default class Renderer {
         }
       }
     }
-    // console.log(this.vertices, this.densityPerVertex);
     this.gl.bindBuffer(
       this.gl.ARRAY_BUFFER,
       this.webglData.buffers.positionBuffer
@@ -218,5 +218,18 @@ export default class Renderer {
     );
 
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6 * size);
+  }
+  private draw(now: number) {
+    now *= 0.001;
+    // Subtract the next time from the current time
+    this.fluid.set_dt(now - this.then);
+    // Remember the current time for the next frame.
+    this.then = now;
+    this.render();
+    requestAnimationFrame(this.draw.bind(this));
+  }
+
+  start() {
+    requestAnimationFrame(this.draw.bind(this));
   }
 }

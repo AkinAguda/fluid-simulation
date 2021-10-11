@@ -2,9 +2,9 @@ import Renderer from "./renderer";
 
 import("fluid")
   .then(({ FluidConfig, Fluid }) => {
-    const fluidConfig = FluidConfig.new(64, 0.1, 0.4);
-    const fluid = Fluid.new(fluidConfig);
+    const fluidConfig = FluidConfig.new(64, 20);
+    const fluid = Fluid.new(fluidConfig, 0.1);
     let renderer = new Renderer(fluid);
-    renderer.render();
+    renderer.start();
   })
   .catch((e) => console.error(e));
