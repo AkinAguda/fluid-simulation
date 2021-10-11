@@ -1,9 +1,10 @@
-import { Fluid, FluidConfig } from "fluid";
+import { Fluid } from "fluid";
 import {
   createProgram,
   createShader,
   m3,
   resizeCanvasToDisplaySize,
+  getEventLocation,
 } from "./utils";
 
 export default class Renderer {
@@ -14,6 +15,13 @@ export default class Renderer {
   private fluid: Fluid;
   private densityPerVertex: Float32Array;
   private then = 0;
+  private defaultMouseEventState = {
+    mouseDown: false,
+    dragging: false,
+  };
+  mouseEventState = {
+    ...this.defaultMouseEventState,
+  };
   private webglData: {
     locations: {
       positionAttributeLocation: number | null;
@@ -47,7 +55,34 @@ export default class Renderer {
         densityBuffer: null,
       },
     };
+    this.addEventHandlers();
     this.initializeWebGL();
+  }
+
+  handleEvent = (x: number, y: number) => {
+    this.fluid.update_density(this.fluid.ix(y, x), 1);
+  };
+
+  addEventHandlers() {
+    const n = this.fluid.get_n();
+    this.canvas.addEventListener("mousedown", () => {
+      this.mouseEventState = { ...this.mouseEventState, mouseDown: true };
+    });
+
+    this.canvas.addEventListener("mousemove", (e) => {
+      if (this.mouseEventState.mouseDown) {
+        this.mouseEventState = { ...this.mouseEventState, dragging: true };
+        this.handleEvent(...getEventLocation(e, n));
+      }
+    });
+
+    this.canvas.addEventListener("click", (e) => {
+      this.handleEvent(...getEventLocation(e, n));
+    });
+
+    this.canvas.addEventListener("mouseup", () => {
+      this.mouseEventState = { ...this.defaultMouseEventState };
+    });
   }
 
   private initializeWebGL() {
@@ -155,11 +190,10 @@ export default class Renderer {
 
   private render() {
     let n = this.fluid.get_n();
-    const ix = (x: number, y: number) => x + (n + 2) * y;
     let size = this.fluid.get_size();
     for (let i = 1; i <= n; i++) {
       for (let j = 1; j <= n; j++) {
-        const index = ix(i, j);
+        const index = this.fluid.ix(i, j);
         for (let i = index * 6; i < index * 6 + 6; i++) {
           this.densityPerVertex[i] = this.fluid.get_density_at_index(index);
         }

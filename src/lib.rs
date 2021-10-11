@@ -54,7 +54,7 @@ impl Fluid {
             size,
         }
     }
-    fn ix(&self, x: u16, y: u16) -> u16 {
+    pub fn ix(&self, x: u16, y: u16) -> u16 {
         x + (self.config.n + 2) * y
     }
 
@@ -121,6 +121,10 @@ impl Fluid {
         //     self.dt
         // );
         // self.diffusion_step(&self.density, &self.initial_density);
+    }
+
+    pub fn update_density(&mut self, index: usize, value: f64) {
+        self.density[index] = value
     }
 
     pub fn get_density_at_index(&self, index: usize) -> f64 {

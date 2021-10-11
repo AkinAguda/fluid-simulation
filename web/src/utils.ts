@@ -1,13 +1,16 @@
-// const getEventLocation = (e: MouseEvent) => {
-//   const rect = e.target.getBoundingClientRect();
-//   const x = e.clientX - rect.left; //x position within the element.
-//   const y = e.clientY - rect.top; //y position within the element.
-//   const hRatio = N / rect.height;
-//   const wRatio = N / rect.width;
-//   const convertedX = Math.round(x * wRatio);
-//   const convertedY = Math.round(y * hRatio);
-//   return [convertedX, convertedY];
-// };
+export const getEventLocation = (
+  e: MouseEvent,
+  n: number
+): [number, number] => {
+  const rect = (e.target as HTMLButtonElement).getBoundingClientRect();
+  const x = e.clientX - rect.left; //x position within the element.
+  const y = e.clientY - rect.top; //y position within the element.
+  const hRatio = n / rect.height;
+  const wRatio = n / rect.width;
+  const convertedX = Math.round(x * wRatio);
+  const convertedY = Math.round(y * hRatio);
+  return [convertedX, convertedY];
+};
 
 // WEBGL FUNCTIONS
 export const createShader = (
