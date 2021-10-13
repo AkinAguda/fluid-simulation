@@ -1,8 +1,8 @@
 mod utils;
 
 use utils::{
-    gauss_seidel, interpolate, val_after_diff, DiffLinearEquationArgs, GaussSeidelFunction,
-    PropertyType,
+    gauss_seidel, get_surrounding_coords, interpolate, set_panic_hook, val_after_diff,
+    DiffLinearEquationArgs, GaussSeidelFunction, PropertyType,
 };
 use wasm_bindgen::prelude::*;
 
@@ -41,6 +41,7 @@ pub struct Fluid {
 #[wasm_bindgen]
 impl Fluid {
     pub fn new(config: FluidConfig) -> Fluid {
+        set_panic_hook();
         let size = (config.n + 2) * (config.n + 2);
         let vector_size = size.into();
         Fluid {
@@ -123,32 +124,41 @@ impl Fluid {
         let initial_pos_x = x as f64 - self.velocity_x[self.ix(x, y) as usize] * self.dt;
         let initial_pos_y = y as f64 - self.velocity_y[self.ix(x, y) as usize] * self.dt;
 
-        let point_1 = [initial_pos_x.floor(), initial_pos_y.floor()]; // top left
-        let point_2 = [initial_pos_x.ceil(), initial_pos_y.floor()]; // top right
-        let point_3 = [initial_pos_x.floor(), initial_pos_y.ceil()]; //  bottom left
-        let point_4 = [initial_pos_x.ceil(), initial_pos_y.ceil()]; //  bottom right
+        let surrounding_coords = get_surrounding_coords(initial_pos_x, initial_pos_y);
 
         // This does some bilinear interpolation
         let linear_interpolation_of_top = interpolate(
-            point_1[0],
-            property[self.ix(point_1[0] as u16, point_1[1] as u16) as usize],
-            point_2[0],
-            property[self.ix(point_2[0] as u16, point_2[1] as u16) as usize],
+            surrounding_coords[0][0],
+            property[self.ix(
+                surrounding_coords[0][0] as u16,
+                surrounding_coords[0][1] as u16,
+            ) as usize],
+            surrounding_coords[1][0],
+            property[self.ix(
+                surrounding_coords[1][0] as u16,
+                surrounding_coords[1][1] as u16,
+            ) as usize],
             initial_pos_x,
         );
 
         let linear_interpolation_of_bottom = interpolate(
-            point_3[0],
-            property[self.ix(point_3[0] as u16, point_3[1] as u16) as usize],
-            point_4[0],
-            property[self.ix(point_4[0] as u16, point_4[1] as u16) as usize],
+            surrounding_coords[2][0],
+            property[self.ix(
+                surrounding_coords[2][0] as u16,
+                surrounding_coords[2][1] as u16,
+            ) as usize],
+            surrounding_coords[3][0],
+            property[self.ix(
+                surrounding_coords[3][0] as u16,
+                surrounding_coords[3][1] as u16,
+            ) as usize],
             initial_pos_x,
         );
 
         interpolate(
-            point_1[1],
+            surrounding_coords[0][1],
             linear_interpolation_of_top,
-            point_3[1],
+            surrounding_coords[2][1],
             linear_interpolation_of_bottom,
             initial_pos_y,
         )

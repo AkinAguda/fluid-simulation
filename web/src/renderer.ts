@@ -10,7 +10,9 @@ import {
 export default class Renderer {
   private canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;
-  private resetButton: HTMLButtonElement;
+  //   private resetButton: HTMLButtonElement;
+  private modeButton: HTMLButtonElement;
+  private mode = 0;
   private vertices: Float32Array;
   private fluid: Fluid;
   private densityPerVertex: Float32Array;
@@ -40,8 +42,24 @@ export default class Renderer {
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
     this.gl.clearColor(0, 0, 0, 0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    this.modeButton = document.getElementById("mode") as HTMLButtonElement;
+    this.modeButton.innerHTML = "All";
+    this.modeButton.onclick = () => {
+      if (this.mode < 2) {
+        this.mode += 1;
+      } else {
+        this.mode = 0;
+      }
+      if (this.mode === 0) {
+        this.modeButton.innerHTML = "All";
+      } else if (this.mode === 1) {
+        this.modeButton.innerHTML = "Velocity";
+      } else if (this.mode === 2) {
+        this.modeButton.innerHTML = "Density";
+      }
+    };
 
-    this.resetButton = document.getElementById("reset") as HTMLButtonElement;
+    // this.resetButton = document.getElementById("reset") as HTMLButtonElement;
     this.fluid = fluid;
     this.vertices = new Float32Array(fluid.get_size() * 12);
     this.densityPerVertex = new Float32Array(fluid.get_size() * 6);
@@ -60,8 +78,14 @@ export default class Renderer {
   }
 
   handleEvent = (x: number, y: number) => {
-    this.fluid.add_velocity(this.fluid.ix(y, x), 100, 100);
-    this.fluid.add_density(this.fluid.ix(y, x), 100);
+    if (this.mode === 0) {
+      this.fluid.add_velocity(this.fluid.ix(y, x), 100, 100);
+      this.fluid.add_density(this.fluid.ix(y, x), 100);
+    } else if (this.mode === 1) {
+      this.fluid.add_velocity(this.fluid.ix(y, x), 100, 100);
+    } else if (this.mode === 2) {
+      this.fluid.add_density(this.fluid.ix(y, x), 100);
+    }
   };
 
   addEventHandlers() {

@@ -1,13 +1,13 @@
-// pub fn set_panic_hook() {
-//     // When the `console_error_panic_hook` feature is enabled, we can call the
-//     // `set_panic_hook` function at least once during initialization, and then
-//     // we will get better error messages if our code ever panics.
-//     //
-//     // For more details see
-//     // https://github.com/rustwasm/console_error_panic_hook#readme
-//     #[cfg(feature = "console_error_panic_hook")]
-//     console_error_panic_hook::set_once();
-// }
+pub fn set_panic_hook() {
+    // When the `console_error_panic_hook` feature is enabled, we can call the
+    // `set_panic_hook` function at least once during initialization, and then
+    // we will get better error messages if our code ever panics.
+    //
+    // For more details see
+    // https://github.com/rustwasm/console_error_panic_hook#readme
+    #[cfg(feature = "console_error_panic_hook")]
+    console_error_panic_hook::set_once();
+}
 
 // TYPES
 
@@ -83,6 +83,28 @@ pub fn val_after_diff(
                 + surrounding_property_values[3]))
             / 4.0)
         / (1.0 + args.k)
+}
+
+pub fn get_surrounding_coords(initial_pos_x: f64, initial_pos_y: f64) -> [[f64; 2]; 4] {
+    let point_1 = [initial_pos_x.floor(), initial_pos_y.floor()]; // top left
+    let point_2 = [initial_pos_x.ceil(), initial_pos_y.floor()]; // top right
+    let point_3 = [initial_pos_x.floor(), initial_pos_y.ceil()]; //  bottom left
+    let point_4 = [initial_pos_x.ceil(), initial_pos_y.ceil()]; //  bottom right
+
+    [point_1, point_2, point_3, point_4]
+}
+
+mod get_surrounding_coords_tests {
+    use super::*;
+
+    #[test]
+    fn interpolation_works() {
+        let surrounding_coords = get_surrounding_coords(2.7, 2.2);
+        assert_eq!(
+            surrounding_coords,
+            [[2.0, 2.0], [3.0, 2.0], [2.0, 3.0], [3.0, 3.0]]
+        );
+    }
 }
 
 /* This function does a linear interpolation between to properties at 2 points
