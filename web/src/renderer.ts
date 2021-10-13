@@ -60,7 +60,7 @@ export default class Renderer {
   }
 
   handleEvent = (x: number, y: number) => {
-    this.fluid.add_velocity(this.fluid.ix(y, x), 500, 100);
+    this.fluid.add_velocity(this.fluid.ix(y, x), 100, 100);
     this.fluid.add_density(this.fluid.ix(y, x), 100);
   };
 
