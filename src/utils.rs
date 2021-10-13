@@ -85,6 +85,22 @@ pub fn val_after_diff(
         / (1.0 + args.k)
 }
 
+/* This function does a linear interpolation between to properties at 2 points
+on the MAC grid */
+pub fn interpolate(a_pos: f64, a_val: f64, b_pos: f64, b_val: f64, g_pos: f64) -> f64 {
+    a_val - (a_val * (a_pos - g_pos).abs()) + b_val - (b_val * (b_pos - g_pos).abs())
+}
+
+mod interpolation_tests {
+    use super::*;
+
+    #[test]
+    fn interpolation_works() {
+        let new_density = interpolate(4.0, 100.0, 5.0, 200.0, 4.4);
+        assert_eq!(new_density, 140.0);
+    }
+}
+
 #[macro_export]
 macro_rules! add_source {
     ($property:expr, $initial_property:expr, $size:expr, $dt:expr) => {
@@ -94,15 +110,8 @@ macro_rules! add_source {
     };
 }
 
-// #[macro_export]
-// macro_rules! swap {
-//     ($vector_1, $vector_2) => {
-
-//     };
-// }
-
 #[cfg(test)]
-mod tests {
+mod gauss_seidel_tests {
     use super::*;
 
     #[test]

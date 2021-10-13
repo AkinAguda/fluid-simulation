@@ -60,7 +60,8 @@ export default class Renderer {
   }
 
   handleEvent = (x: number, y: number) => {
-    this.fluid.update_density(this.fluid.ix(y, x), 1);
+    this.fluid.add_velocity(this.fluid.ix(y, x), 500, 100);
+    this.fluid.add_density(this.fluid.ix(y, x), 100);
   };
 
   addEventHandlers() {
@@ -189,6 +190,7 @@ export default class Renderer {
   }
 
   private render() {
+    this.fluid.simulate();
     let n = this.fluid.get_n();
     let size = this.fluid.get_size();
     for (let i = 1; i <= n; i++) {
