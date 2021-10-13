@@ -183,6 +183,13 @@ impl Fluid {
         }
     }
 
+    fn divergence(&mut self, x: u16, y: u16) -> f64 {
+        (self.velocity_x[self.ix(x + 1, y) as usize] - self.velocity_x[self.ix(x - 1, y) as usize]
+            + self.velocity_y[self.ix(x, y + 1) as usize]
+            + self.velocity_y[self.ix(x, y - 1) as usize])
+            / 2.0
+    }
+
     fn density_step(&mut self) {
         self.diffuse_density();
         std::mem::swap(&mut self.density, &mut self.initial_density);
