@@ -151,15 +151,16 @@ impl Fluid {
         let initial_pos_x = x as f64 - self.velocity_x[self.ix(x, y) as usize] * self.dt;
         let initial_pos_y = y as f64 - self.velocity_y[self.ix(x, y) as usize] * self.dt;
 
-        let surrounding_coords = get_surrounding_coords(initial_pos_x, initial_pos_y);
+        let surrounding_coords =
+            get_surrounding_coords(initial_pos_x, initial_pos_y, self.config.n + 1);
 
-        log_usize(
-            self.ix(
-                surrounding_coords[3][0] as u16,
-                surrounding_coords[3][1] as u16,
-            ) as usize,
-            "ji",
-        );
+        // log_usize(
+        //     self.ix(
+        //         surrounding_coords[3][0] as u16,
+        //         surrounding_coords[3][1] as u16,
+        //     ) as usize,
+        //     "ji",
+        // );
 
         // This does some bilinear interpolation
         let linear_interpolation_of_top = interpolate(
