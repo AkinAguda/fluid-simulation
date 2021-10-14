@@ -1,4 +1,5 @@
 mod utils;
+use std::cmp;
 
 use utils::{
     gauss_seidel, get_surrounding_coords, interpolate, set_panic_hook, val_after_diff,
@@ -11,6 +12,28 @@ use wasm_bindgen::prelude::*;
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+#[wasm_bindgen]
+extern "C" {
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+
+    // The `console.log` is quite polymorphic, so we can bind it with multiple
+    // signatures. Note that we need to use `js_name` to ensure we always call
+    // `log` in JS.
+    #[wasm_bindgen(js_namespace = console, js_name = log)]
+    fn log_f64(a: f64, b: &str);
+
+    // log usize and what it represents
+    #[wasm_bindgen(js_namespace = console, js_name = log)]
+    fn log_usize(a: usize, b: &str);
+
+    // Multiple arguments too!
+    #[wasm_bindgen(js_namespace = console, js_name = log)]
+    fn log_many(a: &str, b: &str);
+}
 
 #[wasm_bindgen]
 pub struct FluidConfig {
@@ -130,6 +153,14 @@ impl Fluid {
 
         let surrounding_coords = get_surrounding_coords(initial_pos_x, initial_pos_y);
 
+        log_usize(
+            self.ix(
+                surrounding_coords[3][0] as u16,
+                surrounding_coords[3][1] as u16,
+            ) as usize,
+            "ji",
+        );
+
         // This does some bilinear interpolation
         let linear_interpolation_of_top = interpolate(
             surrounding_coords[0][0],
@@ -205,10 +236,12 @@ impl Fluid {
         for i in 1..self.config.n + 1 {
             for j in 1..self.config.n + 1 {
                 let index = self.ix(i, j) as usize;
+
                 let gauss_seidel_fn1 = GaussSeidelFunction::new(
                     val_after_poisson,
                     self.divergence_values[self.ix(i - 1, j) as usize],
                 );
+
                 let gauss_seidel_fn2 = GaussSeidelFunction::new(
                     val_after_poisson,
                     self.divergence_values[self.ix(i + 1, j) as usize],
