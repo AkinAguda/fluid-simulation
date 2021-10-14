@@ -84,7 +84,11 @@ impl Fluid {
         }
     }
     pub fn ix(&self, x: u16, y: u16) -> u16 {
-        x + (self.config.n + 2) * y
+        let mut new_x = cmp::min(x, self.config.n + 1);
+        new_x = cmp::max(0, new_x);
+        let mut new_y = cmp::min(y, self.config.n + 1);
+        new_y = cmp::max(0, new_y);
+        new_x + (self.config.n + 2) * new_y
     }
 
     fn diffuse(&self, x: u16, y: u16, property: &PropertyType) -> f64 {
@@ -151,8 +155,7 @@ impl Fluid {
         let initial_pos_x = x as f64 - self.velocity_x[self.ix(x, y) as usize] * self.dt;
         let initial_pos_y = y as f64 - self.velocity_y[self.ix(x, y) as usize] * self.dt;
 
-        let surrounding_coords =
-            get_surrounding_coords(initial_pos_x, initial_pos_y, self.config.n + 1);
+        let surrounding_coords = get_surrounding_coords(initial_pos_x, initial_pos_y);
 
         // log_usize(
         //     self.ix(

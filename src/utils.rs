@@ -1,5 +1,3 @@
-use std::cmp;
-
 pub fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
     // `set_panic_hook` function at least once during initialization, and then
@@ -96,23 +94,11 @@ pub fn val_after_poisson(surrounding_property_values: &PropertyType, divergence:
         / 4.0
 }
 
-pub fn get_surrounding_coords(initial_pos_x: f64, initial_pos_y: f64, clamp: u16) -> [[f64; 2]; 4] {
-    let point_1 = [
-        cmp::min(initial_pos_x.floor() as u16, clamp) as f64,
-        cmp::min(initial_pos_y.floor() as u16, clamp) as f64,
-    ]; // top left
-    let point_2 = [
-        cmp::min(initial_pos_x.ceil() as u16, clamp) as f64,
-        cmp::min(initial_pos_y.floor() as u16, clamp) as f64,
-    ]; // top right
-    let point_3 = [
-        cmp::min(initial_pos_x.floor() as u16, clamp) as f64,
-        cmp::min(initial_pos_y.ceil() as u16, clamp) as f64,
-    ]; //  bottom left
-    let point_4 = [
-        cmp::min(initial_pos_x.ceil() as u16, clamp) as f64,
-        cmp::min(initial_pos_y.ceil() as u16, clamp) as f64,
-    ]; //  bottom right
+pub fn get_surrounding_coords(initial_pos_x: f64, initial_pos_y: f64) -> [[f64; 2]; 4] {
+    let point_1 = [initial_pos_x.floor(), initial_pos_y.floor()]; // top left
+    let point_2 = [initial_pos_x.ceil(), initial_pos_y.floor()]; // top right
+    let point_3 = [initial_pos_x.floor(), initial_pos_y.ceil()]; //  bottom left
+    let point_4 = [initial_pos_x.ceil(), initial_pos_y.ceil()]; //  bottom right
 
     [point_1, point_2, point_3, point_4]
 }
@@ -122,7 +108,7 @@ mod get_surrounding_coords_tests {
 
     #[test]
     fn interpolation_works() {
-        let surrounding_coords = get_surrounding_coords(2.7, 2.2, 10);
+        let surrounding_coords = get_surrounding_coords(2.7, 2.2);
         assert_eq!(
             surrounding_coords,
             [[2.0, 2.0], [3.0, 2.0], [2.0, 3.0], [3.0, 3.0]]
