@@ -2,7 +2,7 @@ mod utils;
 
 use utils::{
     gauss_seidel, get_surrounding_coords, interpolate, set_panic_hook, val_after_diff,
-    DiffLinearEquationArgs, GaussSeidelFunction, PropertyType,
+    val_after_poisson, DiffLinearEquationArgs, GaussSeidelFunction, PropertyType,
 };
 use wasm_bindgen::prelude::*;
 
@@ -35,6 +35,8 @@ pub struct Fluid {
     initial_velocity_y: PropertyType,
     density: PropertyType,
     initial_density: PropertyType,
+    divergence_values: PropertyType,
+    poisson_values: PropertyType,
     size: u16,
 }
 
@@ -53,6 +55,8 @@ impl Fluid {
             initial_velocity_y: vec![0.0; vector_size],
             density: vec![0.0; vector_size],
             initial_density: vec![0.0; vector_size],
+            divergence_values: vec![0.0; vector_size],
+            poisson_values: vec![0.0; vector_size],
             size,
         }
     }
@@ -91,7 +95,7 @@ impl Fluid {
                 gauss_seidel_fn4,
             ],
             vec![0.0, 0.0, 0.0, 0.0],
-            10,
+            20,
         );
 
         val_after_diff(
@@ -190,6 +194,71 @@ impl Fluid {
             / 2.0
     }
 
+    fn project(&mut self) {
+        for i in 1..self.config.n + 1 {
+            for j in 1..self.config.n + 1 {
+                let index = self.ix(i, j) as usize;
+                self.divergence_values[index] = self.divergence(i, j);
+            }
+        }
+
+        for i in 1..self.config.n + 1 {
+            for j in 1..self.config.n + 1 {
+                let index = self.ix(i, j) as usize;
+                let gauss_seidel_fn1 = GaussSeidelFunction::new(
+                    val_after_poisson,
+                    self.divergence_values[self.ix(i - 1, j) as usize],
+                );
+                let gauss_seidel_fn2 = GaussSeidelFunction::new(
+                    val_after_poisson,
+                    self.divergence_values[self.ix(i + 1, j) as usize],
+                );
+                let gauss_seidel_fn3 = GaussSeidelFunction::new(
+                    val_after_poisson,
+                    self.divergence_values[self.ix(i, j - 1) as usize],
+                );
+                let gauss_seidel_fn4 = GaussSeidelFunction::new(
+                    val_after_poisson,
+                    self.divergence_values[self.ix(i, j + 1) as usize],
+                );
+
+                let surrounding_values = gauss_seidel(
+                    vec![
+                        gauss_seidel_fn1,
+                        gauss_seidel_fn2,
+                        gauss_seidel_fn3,
+                        gauss_seidel_fn4,
+                    ],
+                    vec![0.0, 0.0, 0.0, 0.0],
+                    20,
+                );
+
+                self.poisson_values[index] =
+                    val_after_poisson(&surrounding_values, &self.divergence_values[index]);
+            }
+        }
+
+        for i in 1..self.config.n + 1 {
+            for j in 1..self.config.n + 1 {
+                let index = self.ix(i, j) as usize;
+                self.velocity_x[index] = self.velocity_x[index]
+                    - ((self.poisson_values[self.ix(i + 1, j) as usize])
+                        - (self.poisson_values[self.ix(i - 1, j) as usize]))
+                        / 2.0;
+                self.velocity_y[index] = self.velocity_y[index]
+                    - ((self.poisson_values[self.ix(i, j + 1) as usize])
+                        - (self.poisson_values[self.ix(i, j - 1) as usize]))
+                        / 2.0
+            }
+        }
+    }
+
+    // fn set_bnd(&mut self) {
+    //     for i in 1..self.config.n + 1 {
+
+    //     }
+    // }
+
     fn density_step(&mut self) {
         self.diffuse_density();
         std::mem::swap(&mut self.density, &mut self.initial_density);
@@ -201,9 +270,13 @@ impl Fluid {
         self.diffuse_velocity();
         std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
         std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
+        self.project();
+        std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
+        std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
         self.advect_velocity();
         std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
         std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
+        self.project();
     }
 
     pub fn add_density(&mut self, index: usize, value: f64) {

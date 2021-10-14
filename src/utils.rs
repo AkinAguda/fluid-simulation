@@ -85,6 +85,15 @@ pub fn val_after_diff(
         / (1.0 + args.k)
 }
 
+pub fn val_after_poisson(surrounding_property_values: &PropertyType, divergence: &f64) -> f64 {
+    ((surrounding_property_values[0]
+        + surrounding_property_values[1]
+        + surrounding_property_values[2]
+        + surrounding_property_values[3])
+        - divergence)
+        / 4.0
+}
+
 pub fn get_surrounding_coords(initial_pos_x: f64, initial_pos_y: f64) -> [[f64; 2]; 4] {
     let point_1 = [initial_pos_x.floor(), initial_pos_y.floor()]; // top left
     let point_2 = [initial_pos_x.ceil(), initial_pos_y.floor()]; // top right
