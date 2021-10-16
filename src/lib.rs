@@ -150,6 +150,30 @@ impl Fluid {
         let initial_pos_x = x as f64 - self.velocity_x[self.ix(x, y) as usize] * self.dt;
         let initial_pos_y = y as f64 - self.velocity_y[self.ix(x, y) as usize] * self.dt;
 
+        let initial_pos_x = if initial_pos_x < 0.5 {
+            0.5
+        } else {
+            initial_pos_x
+        };
+
+        let initial_pos_x = if initial_pos_x > self.config.n as f64 + 0.5 {
+            0.5 + self.config.n as f64
+        } else {
+            initial_pos_x
+        };
+
+        let initial_pos_y = if initial_pos_y < 0.5 {
+            0.5
+        } else {
+            initial_pos_y
+        };
+
+        let initial_pos_y = if initial_pos_y > self.config.n as f64 + 0.5 {
+            0.5 + self.config.n as f64
+        } else {
+            initial_pos_y
+        };
+
         let i_x = initial_pos_x.floor();
         let i_y = initial_pos_y.floor();
 
