@@ -2,7 +2,7 @@ mod utils;
 use std::cmp;
 
 use utils::{
-    gauss_seidel, lerp, set_panic_hook, val_after_diff, val_after_poisson, DiffLinearEquationArgs,
+    lerp, set_panic_hook, val_after_diff, val_after_poisson, DiffLinearEquationArgs,
     GaussSeidelFunction, PropertyType,
 };
 use wasm_bindgen::prelude::*;
@@ -91,61 +91,56 @@ impl Fluid {
         new_x + (self.config.n + 2) * new_y
     }
 
-    fn diffuse(&self, x: u16, y: u16, property: &PropertyType) -> f64 {
-        let k = self.dt * self.config.diffusion;
-
-        let gauss_seidel_fn1 = GaussSeidelFunction::new(
-            val_after_diff,
-            DiffLinearEquationArgs::new(property[self.ix(x + 1, y) as usize], k),
-        );
-
-        let gauss_seidel_fn2 = GaussSeidelFunction::new(
-            val_after_diff,
-            DiffLinearEquationArgs::new(property[self.ix(x - 1, y) as usize], k),
-        );
-
-        let gauss_seidel_fn3 = GaussSeidelFunction::new(
-            val_after_diff,
-            DiffLinearEquationArgs::new(property[self.ix(x, y + 1) as usize], k),
-        );
-
-        let gauss_seidel_fn4 = GaussSeidelFunction::new(
-            val_after_diff,
-            DiffLinearEquationArgs::new(property[self.ix(x, y - 1) as usize], k),
-        );
-
-        let surrounding_values = gauss_seidel(
-            vec![
-                gauss_seidel_fn1,
-                gauss_seidel_fn2,
-                gauss_seidel_fn3,
-                gauss_seidel_fn4,
-            ],
-            vec![0.0, 0.0, 0.0, 0.0],
-            20,
-        );
-
-        val_after_diff(
-            &surrounding_values,
-            &DiffLinearEquationArgs::new(property[self.ix(x, y) as usize], k),
-        )
-    }
-
     fn diffuse_density(&mut self) {
-        for i in 1..self.config.n + 1 {
-            for j in 1..self.config.n + 1 {
-                let index = self.ix(i, j) as usize;
-                self.density[index] = self.diffuse(i, j, &self.initial_density);
+        let k = self.dt * self.config.diffusion * (self.config.n as f64) * (self.config.n as f64);
+        for _ in 0..10 {
+            for i in 1..self.config.n + 1 {
+                for j in 1..self.config.n + 1 {
+                    let index = self.ix(i, j) as usize;
+                    // self.density[index] = self.diffuse(i, j, &self.initial_density);
+                    self.density[index] = (self.initial_density[self.ix(i, j) as usize]
+                        + k * (self.density[self.ix(i - 1, j) as usize]
+                            + self.density[self.ix(i + 1, j) as usize]
+                            + self.density[self.ix(i, j - 1) as usize]
+                            + self.density[self.ix(i, j + 1) as usize]))
+                        / (1.0 + 4.0 * k)
+                }
             }
         }
     }
 
     fn diffuse_velocity(&mut self) {
-        for i in 1..self.config.n + 1 {
-            for j in 1..self.config.n + 1 {
-                let index = self.ix(i, j) as usize;
-                self.velocity_x[index] = self.diffuse(i, j, &self.initial_velocity_x);
-                self.velocity_y[index] = self.diffuse(i, j, &self.initial_velocity_y);
+        let k = self.dt * self.config.diffusion * (self.config.n as f64) * (self.config.n as f64);
+        for _ in 0..10 {
+            for i in 1..self.config.n + 1 {
+                for j in 1..self.config.n + 1 {
+                    let index = self.ix(i, j) as usize;
+                    // self.density[index] = self.diffuse(i, j, &self.initial_density);
+                    self.velocity_x[index] = (self.initial_velocity_x[self.ix(i, j) as usize]
+                        + k * (self.density[self.ix(i - 1, j) as usize]
+                            + self.velocity_x[self.ix(i + 1, j) as usize]
+                            + self.velocity_x[self.ix(i, j - 1) as usize]
+                            + self.velocity_x[self.ix(i, j + 1) as usize])
+                            / 4.0)
+                        / (1.0 + k)
+                }
+            }
+        }
+        // std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
+
+        for _ in 0..10 {
+            for i in 1..self.config.n + 1 {
+                for j in 1..self.config.n + 1 {
+                    let index = self.ix(i, j) as usize;
+                    // self.density[index] = self.diffuse(i, j, &self.initial_density);
+                    self.velocity_y[index] = (self.initial_velocity_y[self.ix(i, j) as usize]
+                        + k * (self.density[self.ix(i - 1, j) as usize]
+                            + self.velocity_y[self.ix(i + 1, j) as usize]
+                            + self.velocity_y[self.ix(i, j - 1) as usize]
+                            + self.velocity_y[self.ix(i, j + 1) as usize])
+                            / 4.0)
+                        / (1.0 + k)
+                }
             }
         }
     }
@@ -154,52 +149,6 @@ impl Fluid {
         // This calculates the position for where the previous density would come from
         let initial_pos_x = x as f64 - self.velocity_x[self.ix(x, y) as usize] * self.dt;
         let initial_pos_y = y as f64 - self.velocity_y[self.ix(x, y) as usize] * self.dt;
-
-        // let surrounding_coords = get_surrounding_coords(initial_pos_x, initial_pos_y);
-        // log_usize(
-        //     self.ix(
-        //         surrounding_coords[3][0] as u16,
-        //         surrounding_coords[3][1] as u16,
-        //     ) as usize,
-        //     "ji",
-        // );
-
-        // This does some bilinear interpolation
-        // let linear_interpolation_of_top = interpolate(
-        //     surrounding_coords[0][0],
-        //     property[self.ix(
-        //         surrounding_coords[0][0] as u16,
-        //         surrounding_coords[0][1] as u16,
-        //     ) as usize],
-        //     surrounding_coords[1][0],
-        //     property[self.ix(
-        //         surrounding_coords[1][0] as u16,
-        //         surrounding_coords[1][1] as u16,
-        //     ) as usize],
-        //     initial_pos_x,
-        // );
-
-        // let linear_interpolation_of_bottom = interpolate(
-        //     surrounding_coords[2][0],
-        //     property[self.ix(
-        //         surrounding_coords[2][0] as u16,
-        //         surrounding_coords[2][1] as u16,
-        //     ) as usize],
-        //     surrounding_coords[3][0],
-        //     property[self.ix(
-        //         surrounding_coords[3][0] as u16,
-        //         surrounding_coords[3][1] as u16,
-        //     ) as usize],
-        //     initial_pos_x,
-        // );
-
-        // interpolate(
-        //     surrounding_coords[0][1],
-        //     linear_interpolation_of_top,
-        //     surrounding_coords[2][1],
-        //     linear_interpolation_of_bottom,
-        //     initial_pos_y,
-        // )
 
         let i_x = initial_pos_x.floor();
         let i_y = initial_pos_y.floor();
@@ -243,7 +192,7 @@ impl Fluid {
     fn divergence(&mut self, x: u16, y: u16) -> f64 {
         (self.velocity_x[self.ix(x + 1, y) as usize] - self.velocity_x[self.ix(x - 1, y) as usize]
             + self.velocity_y[self.ix(x, y + 1) as usize]
-            + self.velocity_y[self.ix(x, y - 1) as usize])
+            - self.velocity_y[self.ix(x, y - 1) as usize])
             / 2.0
     }
 
@@ -255,64 +204,43 @@ impl Fluid {
             }
         }
 
-        for i in 1..self.config.n + 1 {
-            for j in 1..self.config.n + 1 {
-                let index = self.ix(i, j) as usize;
+        for _ in 0..10 {
+            for i in 1..self.config.n + 1 {
+                for j in 1..self.config.n + 1 {
+                    let index = self.ix(i, j) as usize;
 
-                let gauss_seidel_fn1 = GaussSeidelFunction::new(
-                    val_after_poisson,
-                    self.divergence_values[self.ix(i - 1, j) as usize],
-                );
-
-                let gauss_seidel_fn2 = GaussSeidelFunction::new(
-                    val_after_poisson,
-                    self.divergence_values[self.ix(i + 1, j) as usize],
-                );
-                let gauss_seidel_fn3 = GaussSeidelFunction::new(
-                    val_after_poisson,
-                    self.divergence_values[self.ix(i, j - 1) as usize],
-                );
-                let gauss_seidel_fn4 = GaussSeidelFunction::new(
-                    val_after_poisson,
-                    self.divergence_values[self.ix(i, j + 1) as usize],
-                );
-
-                let surrounding_values = gauss_seidel(
-                    vec![
-                        gauss_seidel_fn1,
-                        gauss_seidel_fn2,
-                        gauss_seidel_fn3,
-                        gauss_seidel_fn4,
-                    ],
-                    vec![0.0, 0.0, 0.0, 0.0],
-                    20,
-                );
-
-                self.poisson_values[index] =
-                    val_after_poisson(&surrounding_values, &self.divergence_values[index]);
+                    self.poisson_values[index] = val_after_poisson(
+                        &vec![
+                            self.poisson_values[self.ix(i - 1, j) as usize],
+                            self.poisson_values[self.ix(i + 1, j) as usize],
+                            self.poisson_values[self.ix(i, j - 1) as usize],
+                            self.poisson_values[self.ix(i, j + 1) as usize],
+                        ],
+                        &self.divergence_values[index],
+                    );
+                }
             }
         }
 
-        for i in 1..self.config.n + 1 {
-            for j in 1..self.config.n + 1 {
-                let index = self.ix(i, j) as usize;
-                self.velocity_x[index] = self.velocity_x[index]
-                    - ((self.poisson_values[self.ix(i + 1, j) as usize])
-                        - (self.poisson_values[self.ix(i - 1, j) as usize]))
-                        / 2.0;
-                self.velocity_y[index] = self.velocity_y[index]
-                    - ((self.poisson_values[self.ix(i, j + 1) as usize])
-                        - (self.poisson_values[self.ix(i, j - 1) as usize]))
-                        / 2.0
+        for _ in 0..10 {
+            for i in 1..self.config.n + 1 {
+                for j in 1..self.config.n + 1 {
+                    let index = self.ix(i, j) as usize;
+                    self.velocity_x[index] = self.velocity_x[index]
+                        - ((self.poisson_values[self.ix(i + 1, j) as usize])
+                            - (self.poisson_values[self.ix(i - 1, j) as usize]))
+                            / 2.0;
+                    // log_f64(self.velocity_x[index], "velx after project");
+                    self.velocity_y[index] = self.velocity_y[index]
+                        - ((self.poisson_values[self.ix(i, j + 1) as usize])
+                            - (self.poisson_values[self.ix(i, j - 1) as usize]))
+                            / 2.0;
+
+                    // log_f64(self.velocity_x[index], "vely after project");
+                }
             }
         }
     }
-
-    // fn set_bnd(&mut self) {
-    //     for i in 1..self.config.n + 1 {
-
-    //     }
-    // }
 
     fn density_step(&mut self) {
         self.diffuse_density();
@@ -322,15 +250,13 @@ impl Fluid {
     }
 
     fn velocity_step(&mut self) {
-        self.diffuse_velocity();
         std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
         std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
+        self.diffuse_velocity();
         self.project();
         std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
         std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
         self.advect_velocity();
-        std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
-        std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
         self.project();
     }
 
@@ -339,8 +265,10 @@ impl Fluid {
     }
 
     pub fn add_velocity(&mut self, index: usize, value_x: f64, value_y: f64) {
-        self.initial_velocity_x[index] += self.dt * value_x;
-        self.initial_velocity_y[index] += self.dt * value_y;
+        self.initial_velocity_x[index] = value_x;
+        self.initial_velocity_y[index] = value_y;
+        self.velocity_x[index] = self.dt * value_x;
+        self.velocity_y[index] = self.dt * value_y;
     }
 
     pub fn simulate(&mut self) {
@@ -362,5 +290,12 @@ impl Fluid {
 
     pub fn set_dt(&mut self, dt: f64) {
         self.dt = dt
+    }
+
+    pub fn get_velocity_X(&self, index: usize) -> f64 {
+        self.velocity_x[index]
+    }
+    pub fn get_velocity_y(&self, index: usize) -> f64 {
+        self.velocity_y[index]
     }
 }

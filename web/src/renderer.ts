@@ -79,7 +79,7 @@ export default class Renderer {
 
   handleEvent = (x: number, y: number) => {
     if (this.mode === 0) {
-      this.fluid.add_velocity(this.fluid.ix(y, x), 100, 100);
+      this.fluid.add_velocity(this.fluid.ix(y + 5, x + 5), 5, 5);
       this.fluid.add_density(this.fluid.ix(y, x), 100);
     } else if (this.mode === 1) {
       this.fluid.add_velocity(this.fluid.ix(y, x), 100, 100);
@@ -133,7 +133,7 @@ export default class Renderer {
     varying float v_density;
   
     void main() {
-      gl_FragColor = vec4(v_density, v_density, v_density, 1);
+      gl_FragColor = vec4(v_density * 0.2, v_density * 0.1, v_density * 0.5, 1);
     }
   `;
 
@@ -220,8 +220,13 @@ export default class Renderer {
     for (let i = 1; i <= n; i++) {
       for (let j = 1; j <= n; j++) {
         const index = this.fluid.ix(i, j);
+        // console.log(
+        //   this.fluid.get_velocity_X(index),
+        //   this.fluid.get_velocity_y(index)
+        // );
         for (let i = index * 6; i < index * 6 + 6; i++) {
-          this.densityPerVertex[i] = this.fluid.get_density_at_index(index);
+          this.densityPerVertex[i] =
+            this.fluid.get_density_at_index(index) * 1000;
         }
       }
     }

@@ -3,7 +3,7 @@
     width: 100vw; */
   height: 500px;
   width: 500px;
-  border: 2px solid red;
+  /* border: 2px solid red; */
 }
 
 body,
@@ -16,6 +16,10 @@ html {
   justify-content: center;
   height: 100vh;
   flex-direction: column;
+  background-color: black;
+}
+button {
+  display: none;
 }
 .button-box {
   margin-top: 30px;

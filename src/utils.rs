@@ -94,47 +94,9 @@ pub fn val_after_poisson(surrounding_property_values: &PropertyType, divergence:
         / 4.0
 }
 
-// pub fn get_surrounding_coords(initial_pos_x: f64, initial_pos_y: f64) -> [[f64; 2]; 4] {
-//     let point_1 = [initial_pos_x.floor(), initial_pos_y.floor()]; // top left
-//     let point_2 = [initial_pos_x.ceil(), initial_pos_y.floor()]; // top right
-//     let point_3 = [initial_pos_x.floor(), initial_pos_y.ceil()]; //  bottom left
-//     let point_4 = [initial_pos_x.ceil(), initial_pos_y.ceil()]; //  bottom right
-
-//     [point_1, point_2, point_3, point_4]
-// }
-
-// mod get_surrounding_coords_tests {
-//     use super::*;
-
-//     #[test]
-//     fn interpolation_works() {
-//         let surrounding_coords = get_surrounding_coords(2.7, 2.2);
-//         assert_eq!(
-//             surrounding_coords,
-//             [[2.0, 2.0], [3.0, 2.0], [2.0, 3.0], [3.0, 3.0]]
-//         );
-//     }
-// }
-
-/* This function does a linear interpolation between to properties at 2 points
-on the MAC grid */
-// pub fn interpolate(a_pos: f64, a_val: f64, b_pos: f64, b_val: f64, g_pos: f64) -> f64 {
-//     a_val - (a_val * (a_pos - g_pos).abs()) + b_val - (b_val * (b_pos - g_pos).abs())
-// }
-
 pub fn lerp(a: f64, b: f64, k: f64) -> f64 {
     a + (k * (b - a))
 }
-
-// mod interpolation_tests {
-//     use super::*;
-
-//     #[test]
-//     fn interpolation_works() {
-//         let new_density = interpolate(4.0, 100.0, 5.0, 200.0, 4.4);
-//         assert_eq!(new_density, 140.0);
-//     }
-// }
 
 #[macro_export]
 macro_rules! add_source {
@@ -144,6 +106,11 @@ macro_rules! add_source {
         }
     };
 }
+
+// #[macro_export]
+// macro_rules! gauss_seidel {
+//     () => {};
+// }
 
 #[cfg(test)]
 mod gauss_seidel_tests {
