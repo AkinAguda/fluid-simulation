@@ -137,28 +137,44 @@ macro_rules! advect {
 #[macro_export]
 macro_rules! project {
     ($n:expr, $velocity_x:expr, $velocity_y:expr, $poisson:expr, $divergence_values:expr) => {
+        let h = 1 / $n;
         for i in 1..$n + 1 {
             for j in 1..$n + 1 {
                 let index = pure_ix_fn(i, j, $n);
-                $divergence_values[index] = ($velocity_x[pure_ix_fn(i + 1, j, $n)]
-                    - $velocity_x[pure_ix_fn(i - 1, j, $n)]
-                    + $velocity_y[pure_ix_fn(i, j + 1, $n)]
-                    - $velocity_y[pure_ix_fn(i, j - 1, $n)])
-                    / 2.0
+                // $divergence_values[index] = ($velocity_x[pure_ix_fn(i + 1, j, $n)]
+                //     - $velocity_x[pure_ix_fn(i - 1, j, $n)]
+                //     + $velocity_y[pure_ix_fn(i, j + 1, $n)]
+                //     - $velocity_y[pure_ix_fn(i, j - 1, $n)])
+                //     / 2.0
+                $divergence_values[index] = -0.5
+                    * h as f64
+                    * ($velocity_x[pure_ix_fn(i + 1, j, $n)]
+                        - $velocity_x[pure_ix_fn(i - 1, j, $n)]
+                        + $velocity_y[pure_ix_fn(i, j + 1, $n)]
+                        - $velocity_y[pure_ix_fn(i, j + 1, $n)]);
+                $poisson[index] = 0.0;
             }
         }
 
         set_bnd!($n, 0, $divergence_values);
+        set_bnd!($n, 0, $poisson);
+
+        // ($poisson[pure_ix_fn(i - 1, j, $n)]
+        // + $poisson[pure_ix_fn(i + 1, j, $n)]
+        // + $poisson[pure_ix_fn(i, j - 1, $n)]
+        // + $poisson[pure_ix_fn(i, j + 1, $n)]
+        // + $divergence_values[index])
+        // / 4.0
 
         for _ in 0..10 {
             for i in 1..$n + 1 {
                 for j in 1..$n + 1 {
                     let index = pure_ix_fn(i, j, $n);
-                    $poisson[index] = (($poisson[pure_ix_fn(i - 1, j, $n)]
+                    $poisson[index] = ($divergence_values[index]
+                        + $poisson[pure_ix_fn(i - 1, j, $n)]
                         + $poisson[pure_ix_fn(i + 1, j, $n)]
                         + $poisson[pure_ix_fn(i, j - 1, $n)]
                         + $poisson[pure_ix_fn(i, j + 1, $n)])
-                        - $divergence_values[index])
                         / 4.0
                 }
             }

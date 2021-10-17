@@ -233,12 +233,12 @@ export default class Renderer {
         const index = this.fluid.ix(i, j);
         const vx = this.fluid.get_velocity_X(index);
         const vy = this.fluid.get_velocity_y(index);
-        if (vx !== 0 && vy !== 0) {
-          // console.log(vx, vy);
-        }
+        // if (vx !== 0 && vy !== 0) {
+        //   console.log(vx, vy);
+        // }
         for (let i = index * 6; i < index * 6 + 6; i++) {
           this.densityPerVertex[i] =
-            this.fluid.get_density_at_index(index) * 1000;
+            this.fluid.get_density_at_index(index) * 100;
         }
       }
     }
