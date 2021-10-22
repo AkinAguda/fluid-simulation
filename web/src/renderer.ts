@@ -85,8 +85,17 @@ export default class Renderer {
     if (this.mode === 0) {
       let amtX = y - Math.abs(this.mouseEventState.pos.x);
       let amtY = x - Math.abs(this.mouseEventState.pos.y);
-      this.fluid.add_velocity(this.fluid.ix(y, x), 1, 1);
-      this.fluid.add_density(this.fluid.ix(y, x), 1);
+      this.fluid.add_velocity(
+        this.fluid.ix(y, x),
+        // Math.random() * 50,
+        // Math.random() * 50
+        0,
+        0
+      );
+      this.fluid.add_density(
+        this.fluid.ix(y, x),
+        Math.floor(Math.random() * (5 - 1 + 1)) + 1
+      );
     }
 
     // else if (this.mode === 1) {
@@ -307,6 +316,12 @@ export default class Renderer {
   }
 
   start() {
+    setInterval(() => {
+      console.log(this.fluid.get_density_expensive());
+      // console.log(
+      //   this.fluid.get_density_expensive().map((s) => formatDec(s) / 10)
+      // );
+    }, 2000);
     requestAnimationFrame(this.draw.bind(this));
   }
 }

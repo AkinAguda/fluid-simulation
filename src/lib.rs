@@ -222,4 +222,7 @@ impl Fluid {
     pub fn get_velocity_y(&self, index: usize) -> f64 {
         self.velocity_y[index]
     }
+    pub fn get_density_expensive(&self) -> PropertyType {
+        self.density.clone()
+    }
 }
