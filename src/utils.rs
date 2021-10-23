@@ -33,7 +33,8 @@ pub fn pure_ix_fn(x: u16, y: u16, n: u16) -> usize {
 macro_rules! add_source {
     ($property:expr, $initial_property:expr, $size:expr, $dt:expr) => {
         for index in 0..$size {
-            $property[index] += $dt * $initial_property[index]
+            $property[index] += $dt * $initial_property[index];
+            $initial_property[index] = 0.0;
         }
     };
 }
@@ -84,6 +85,11 @@ macro_rules! advect {
                 let index = pure_ix_fn(i, j, $n) as usize;
                 let initial_pos_x = i as f64 - $velocity_x[index] * dt0;
                 let initial_pos_y = j as f64 - $velocity_y[index] * dt0;
+
+                // log_f64($velocity_x[index], "vel x");
+                // log_f64(j as f64, "y");
+                // log_f64(initial_pos_x, "new x");
+                // log_f64(initial_pos_y, "new y");
 
                 let initial_pos_x = if initial_pos_x < 0.5 {
                     0.5

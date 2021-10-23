@@ -16,11 +16,9 @@ html {
   justify-content: center;
   height: 100vh;
   flex-direction: column;
-  background-color: black;
+  /* background-color: black; */
 }
-button {
-  display: none;
-}
+
 .button-box {
   margin-top: 30px;
 }

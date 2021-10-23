@@ -81,31 +81,36 @@ export default class Renderer {
     this.initializeWebGL();
   }
 
+  addV(x: number, y: number) {
+    let amtX = y - Math.abs(this.mouseEventState.pos.x);
+    let amtY = x - Math.abs(this.mouseEventState.pos.y);
+    this.fluid.add_velocity(
+      this.fluid.ix(y, x),
+      Math.random() * 50,
+      Math.random() * 50
+    );
+  }
+
+  addD(x: number, y: number) {
+    this.fluid.add_density(
+      this.fluid.ix(y, x),
+      Math.floor(Math.random() * (5 - 1 + 1)) + 1
+    );
+  }
+
   handleEvent = (x: number, y: number) => {
     if (this.mode === 0) {
-      let amtX = y - Math.abs(this.mouseEventState.pos.x);
-      let amtY = x - Math.abs(this.mouseEventState.pos.y);
-      this.fluid.add_velocity(
-        this.fluid.ix(y, x),
-        // Math.random() * 50,
-        // Math.random() * 50
-        0,
-        0
-      );
-      this.fluid.add_density(
-        this.fluid.ix(y, x),
-        Math.floor(Math.random() * (5 - 1 + 1)) + 1
-      );
+      this.addV(x, y);
+      this.addD(x, y);
+    } else if (this.mode === 1) {
+      this.addV(x, y);
+    } else if (this.mode === 2) {
+      this.addD(x, y);
     }
-
-    // else if (this.mode === 1) {
-    //   this.fluid.add_velocity(this.fluid.ix(y, x), 100, 100);
-    // } else if (this.mode === 2) {
-    //   this.fluid.add_density(this.fluid.ix(y, x), 100);
-    // }
 
     this.mouseEventState.pos.x = y;
     this.mouseEventState.pos.y = x;
+    // this.fluid.simulate();
   };
 
   addEventHandlers() {
@@ -308,7 +313,7 @@ export default class Renderer {
   private draw(now: number) {
     now *= 0.001;
     // Subtract the next time from the current time
-    this.fluid.set_dt(now - this.then);
+    // this.fluid.set_dt(now - this.then);
     // Remember the current time for the next frame.
     this.then = now;
     this.render();
@@ -317,11 +322,12 @@ export default class Renderer {
 
   start() {
     setInterval(() => {
-      console.log(this.fluid.get_density_expensive());
+      console.log("DENSITY", this.fluid.get_density_expensive());
+      console.log("VELOCITY X", this.fluid.get_velocity_x_expensive());
       // console.log(
       //   this.fluid.get_density_expensive().map((s) => formatDec(s) / 10)
       // );
-    }, 2000);
+    }, 4000);
     requestAnimationFrame(this.draw.bind(this));
   }
 }

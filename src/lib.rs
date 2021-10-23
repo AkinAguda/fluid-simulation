@@ -53,26 +53,32 @@ pub struct Fluid {
     velocity_y: PropertyType,
     initial_velocity_x: PropertyType,
     initial_velocity_y: PropertyType,
+    velocity_x_source: PropertyType,
+    velocity_y_source: PropertyType,
     density: PropertyType,
     initial_density: PropertyType,
+    density_source: PropertyType,
     size: u16,
 }
 
 #[wasm_bindgen]
 impl Fluid {
-    pub fn new(config: FluidConfig) -> Fluid {
+    pub fn new(config: FluidConfig, dt: f64) -> Fluid {
         set_panic_hook();
         let size = (config.n + 2) * (config.n + 2);
         let vector_size = size.into();
         Fluid {
             config,
-            dt: 0.1,
+            dt,
             velocity_x: vec![0.0; vector_size],
             velocity_y: vec![0.0; vector_size],
             initial_velocity_x: vec![0.0; vector_size],
             initial_velocity_y: vec![0.0; vector_size],
+            velocity_x_source: vec![0.0; vector_size],
+            velocity_y_source: vec![0.0; vector_size],
             density: vec![0.0; vector_size],
             initial_density: vec![0.0; vector_size],
+            density_source: vec![0.0; vector_size],
             size,
         }
     }
@@ -87,11 +93,10 @@ impl Fluid {
     fn density_step(&mut self) {
         add_source!(
             self.density,
-            self.initial_density,
+            self.density_source,
             self.size as usize,
             self.dt
         );
-        std::mem::swap(&mut self.density, &mut self.initial_density);
         diffuse!(
             self.config.n,
             0,
@@ -100,7 +105,9 @@ impl Fluid {
             self.config.diffusion,
             self.dt
         );
+
         std::mem::swap(&mut self.density, &mut self.initial_density);
+
         advect!(
             self.config.n,
             0,
@@ -117,19 +124,19 @@ impl Fluid {
     fn velocity_step(&mut self) {
         add_source!(
             self.velocity_x,
-            self.initial_velocity_x,
+            self.velocity_x_source,
             self.size as usize,
             self.dt
         );
 
         add_source!(
             self.velocity_y,
-            self.initial_velocity_y,
+            self.velocity_y_source,
             self.size as usize,
             self.dt
         );
 
-        std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
+        // std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
         diffuse!(
             self.config.n,
             1,
@@ -139,7 +146,7 @@ impl Fluid {
             self.dt
         );
 
-        std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
+        // std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
         diffuse!(
             self.config.n,
             2,
@@ -149,55 +156,62 @@ impl Fluid {
             self.dt
         );
 
-        project!(
-            self.config.n,
-            self.velocity_x,
-            self.velocity_y,
-            self.initial_velocity_x,
-            self.initial_velocity_y
-        );
+        // project!(
+        //     self.config.n,
+        //     self.velocity_x,
+        //     self.velocity_y,
+        //     self.initial_velocity_x,
+        //     self.initial_velocity_y
+        // );
+
+        // std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
+        // std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
+
+        // advect!(
+        //     self.config.n,
+        //     1,
+        //     self.velocity_x,
+        //     self.initial_velocity_x,
+        //     self.velocity_x,
+        //     self.velocity_y,
+        //     self.dt
+        // );
+        // advect!(
+        //     self.config.n,
+        //     2,
+        //     self.velocity_y,
+        //     self.initial_velocity_y,
+        //     self.velocity_x,
+        //     self.velocity_y,
+        //     self.dt
+        // );
+        // project!(
+        //     self.config.n,
+        //     self.velocity_x,
+        //     self.velocity_y,
+        //     self.initial_velocity_x,
+        //     self.initial_velocity_y
+        // );
+
         std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
         std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
-        // self.advect_velocity();
-        advect!(
-            self.config.n,
-            1,
-            self.velocity_x,
-            self.initial_velocity_x,
-            self.velocity_x,
-            self.velocity_y,
-            self.dt
-        );
-        advect!(
-            self.config.n,
-            2,
-            self.velocity_y,
-            self.initial_velocity_y,
-            self.velocity_x,
-            self.velocity_y,
-            self.dt
-        );
-        project!(
-            self.config.n,
-            self.velocity_x,
-            self.velocity_y,
-            self.initial_velocity_x,
-            self.initial_velocity_y
-        );
     }
 
     pub fn add_density(&mut self, index: usize, value: f64) {
-        self.initial_density[index] += value;
+        self.density_source[index] = value;
     }
 
     pub fn add_velocity(&mut self, index: usize, value_x: f64, value_y: f64) {
-        self.initial_velocity_x[index] = value_x;
-        self.initial_velocity_y[index] = value_y;
+        self.velocity_x_source[index] = value_x;
+        self.velocity_y_source[index] = value_y;
     }
 
     pub fn simulate(&mut self) {
         self.velocity_step();
         self.density_step();
+        // std::mem::swap(&mut self.density, &mut self.initial_density);
+        // std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
+        // std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
     }
 
     pub fn get_density_at_index(&self, index: usize) -> f64 {
@@ -224,5 +238,13 @@ impl Fluid {
     }
     pub fn get_density_expensive(&self) -> PropertyType {
         self.density.clone()
+    }
+
+    pub fn get_velocity_x_expensive(&self) -> PropertyType {
+        self.velocity_x.clone()
+    }
+
+    pub fn get_velocity_y_expensive(&self) -> PropertyType {
+        self.velocity_y.clone()
     }
 }
