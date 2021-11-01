@@ -14,10 +14,10 @@ pub fn set_panic_hook() {
 // TYPES
 
 // This is the type of a fluid property
-pub type PropertyType = Vec<f64>;
+pub type PropertyType = Vec<f32>;
 
 // STRUCTS
-pub fn lerp(a: f64, b: f64, k: f64) -> f64 {
+pub fn lerp(a: f32, b: f32, k: f32) -> f32 {
     a + (k * (b - a))
 }
 
@@ -31,10 +31,10 @@ pub fn pure_ix_fn(x: u16, y: u16, n: u16) -> usize {
 
 #[macro_export]
 macro_rules! add_source {
-    ($property:expr, $initial_property:expr, $size:expr, $dt:expr) => {
+    ($property:expr, $source:expr, $size:expr, $dt:expr) => {
         for index in 0..$size {
-            $property[index] += $dt * $initial_property[index];
-            $initial_property[index] = 0.0;
+            $property[index] += $dt * $source[index];
+            $source[index] = 0.0;
         }
     };
 }
@@ -78,61 +78,41 @@ macro_rules! set_bnd {
 #[macro_export]
 macro_rules! advect {
     ($n:expr, $b:expr, $property:expr, $prev_property:expr, $velocity_x:expr, $velocity_y:expr, $dt:expr) => {
-        let dt0 = $dt * ($n as f64);
-
         for i in 1..$n + 1 {
             for j in 1..$n + 1 {
                 let index = pure_ix_fn(i, j, $n) as usize;
-                let initial_pos_x = i as f64 - $velocity_x[index] * dt0;
-                let initial_pos_y = j as f64 - $velocity_y[index] * dt0;
 
-                // log_f64($velocity_x[index], "vel x");
-                // log_f64(j as f64, "y");
-                // log_f64(initial_pos_x, "new x");
-                // log_f64(initial_pos_y, "new y");
+                let inital_pos_x = i as f32 - $velocity_x[pure_ix_fn(i, j, $n)] * $dt;
+                let inital_pos_y = i as f32 - $velocity_y[pure_ix_fn(i, j, $n)] * $dt;
 
-                let initial_pos_x = if initial_pos_x < 0.5 {
-                    0.5
-                } else {
-                    initial_pos_x
-                };
+                let imaginary_x = inital_pos_x.fract();
+                let imaginary_y = inital_pos_y.fract();
 
-                let initial_pos_x = if initial_pos_x > $n as f64 + 0.5 {
-                    0.5 + $n as f64
-                } else {
-                    initial_pos_x
-                };
+                let point_1_x = inital_pos_x.floor() as u16;
+                let point_1_y = inital_pos_y.floor() as u16;
 
-                let initial_pos_y = if initial_pos_y < 0.5 {
-                    0.5
-                } else {
-                    initial_pos_y
-                };
+                let point_2_x = inital_pos_x.ceil() as u16;
+                let point_2_y = inital_pos_y.floor() as u16;
 
-                let initial_pos_y = if initial_pos_y > $n as f64 + 0.5 {
-                    0.5 + $n as f64
-                } else {
-                    initial_pos_y
-                };
+                let point_3_x = inital_pos_x.floor() as u16;
+                let point_3_y = inital_pos_y.ceil() as u16;
 
-                let i_x = initial_pos_x.floor();
-                let i_y = initial_pos_y.floor();
+                let point_4_x = inital_pos_x.ceil() as u16;
+                let point_4_y = inital_pos_y.ceil() as u16;
 
-                let j_x = initial_pos_x.fract();
-                let j_y = initial_pos_y.fract();
-
-                let z1 = lerp(
-                    $prev_property[pure_ix_fn(i_x as u16, i_y as u16, $n) as usize],
-                    $prev_property[pure_ix_fn(i_x as u16 + 1, i_y as u16, $n) as usize],
-                    j_x,
+                $property[index] = lerp(
+                    lerp(
+                        $prev_property[pure_ix_fn(point_1_x, point_1_y, $n)],
+                        $prev_property[pure_ix_fn(point_2_x, point_2_y, $n)],
+                        imaginary_x,
+                    ),
+                    lerp(
+                        $prev_property[pure_ix_fn(point_3_x, point_3_y, $n)],
+                        $prev_property[pure_ix_fn(point_4_x, point_4_y, $n)],
+                        imaginary_x,
+                    ),
+                    imaginary_y,
                 );
-                let z2 = lerp(
-                    $prev_property[pure_ix_fn(i_x as u16, i_y as u16 + 1, $n) as usize],
-                    $prev_property[pure_ix_fn(i_x as u16 + 1, i_y as u16 + 1, $n) as usize],
-                    j_x,
-                );
-
-                $property[index] = lerp(z1, z2, j_y);
             }
         }
 
@@ -143,21 +123,15 @@ macro_rules! advect {
 #[macro_export]
 macro_rules! project {
     ($n:expr, $velocity_x:expr, $velocity_y:expr, $poisson:expr, $divergence_values:expr) => {
-        let h = 1 / $n;
         for i in 1..$n + 1 {
             for j in 1..$n + 1 {
                 let index = pure_ix_fn(i, j, $n);
-                // $divergence_values[index] = ($velocity_x[pure_ix_fn(i + 1, j, $n)]
-                //     - $velocity_x[pure_ix_fn(i - 1, j, $n)]
-                //     + $velocity_y[pure_ix_fn(i, j + 1, $n)]
-                //     - $velocity_y[pure_ix_fn(i, j - 1, $n)])
-                //     / 2.0
-                $divergence_values[index] = -0.5
-                    * h as f64
-                    * ($velocity_x[pure_ix_fn(i + 1, j, $n)]
-                        - $velocity_x[pure_ix_fn(i - 1, j, $n)]
-                        + $velocity_y[pure_ix_fn(i, j + 1, $n)]
-                        - $velocity_y[pure_ix_fn(i, j + 1, $n)]);
+                let a =
+                    $velocity_x[pure_ix_fn(i + 1, j, $n)] - $velocity_x[pure_ix_fn(i - 1, j, $n)];
+                let b =
+                    $velocity_y[pure_ix_fn(i, j + 1, $n)] - $velocity_y[pure_ix_fn(i, j + 1, $n)];
+
+                $divergence_values[index] = 0.5 * (a + b);
                 $poisson[index] = 0.0;
             }
         }
@@ -165,22 +139,15 @@ macro_rules! project {
         set_bnd!($n, 0, $divergence_values);
         set_bnd!($n, 0, $poisson);
 
-        // ($poisson[pure_ix_fn(i - 1, j, $n)]
-        // + $poisson[pure_ix_fn(i + 1, j, $n)]
-        // + $poisson[pure_ix_fn(i, j - 1, $n)]
-        // + $poisson[pure_ix_fn(i, j + 1, $n)]
-        // + $divergence_values[index])
-        // / 4.0
-
         for _ in 0..10 {
             for i in 1..$n + 1 {
                 for j in 1..$n + 1 {
                     let index = pure_ix_fn(i, j, $n);
-                    $poisson[index] = ($divergence_values[index]
-                        + $poisson[pure_ix_fn(i - 1, j, $n)]
+                    $poisson[index] = ($poisson[pure_ix_fn(i - 1, j, $n)]
                         + $poisson[pure_ix_fn(i + 1, j, $n)]
                         + $poisson[pure_ix_fn(i, j - 1, $n)]
-                        + $poisson[pure_ix_fn(i, j + 1, $n)])
+                        + $poisson[pure_ix_fn(i, j + 1, $n)]
+                        - $divergence_values[index])
                         / 4.0
                 }
             }
@@ -188,19 +155,13 @@ macro_rules! project {
 
         set_bnd!($n, 0, $poisson);
 
-        for _ in 0..10 {
-            for i in 1..$n + 1 {
-                for j in 1..$n + 1 {
-                    let index = pure_ix_fn(i, j, $n);
-                    $velocity_x[index] = $velocity_x[index]
-                        - (($poisson[pure_ix_fn(i + 1, j, $n)])
-                            - ($poisson[pure_ix_fn(i - 1, j, $n)]))
-                            / 2.0;
-                    $velocity_y[index] = $velocity_y[index]
-                        - (($poisson[pure_ix_fn(i, j + 1, $n)])
-                            - ($poisson[pure_ix_fn(i, j - 1, $n)]))
-                            / 2.0;
-                }
+        for i in 1..$n + 1 {
+            for j in 1..$n + 1 {
+                let index = pure_ix_fn(i, j, $n);
+                $velocity_x[index] -=
+                    ($poisson[pure_ix_fn(i + 1, j, $n)] - $poisson[pure_ix_fn(i - 1, j, $n)]) * 0.5;
+                $velocity_y[index] -=
+                    ($poisson[pure_ix_fn(i, j + 1, $n)] - $poisson[pure_ix_fn(i, j - 1, $n)]) * 0.5;
             }
         }
         set_bnd!($n, 1, $velocity_x);
@@ -211,18 +172,19 @@ macro_rules! project {
 #[macro_export]
 macro_rules! diffuse {
     ($n:expr, $b:expr, $property:expr, $prev_property:expr, $diffusion:expr, $dt:expr) => {
-        let k = $dt * $diffusion * $n as f64 * $n as f64;
+        let k = $dt * $diffusion * $n as f32 * $n as f32;
         for _ in 0..10 {
             for i in 1..$n + 1 {
                 for j in 1..$n + 1 {
                     let index = pure_ix_fn(i, j, $n) as usize;
 
                     $property[index] = ($prev_property[index]
-                        + k * ($property[pure_ix_fn(i - 1, j, $n) as usize]
+                        + (k * ($property[pure_ix_fn(i - 1, j, $n) as usize]
                             + $property[pure_ix_fn(i + 1, j, $n) as usize]
                             + $property[pure_ix_fn(i, j - 1, $n) as usize]
                             + $property[pure_ix_fn(i, j + 1, $n) as usize]))
-                        / (1.0 + 4.0 * k)
+                            / 4.0)
+                        / (1.0 + k)
                 }
             }
 

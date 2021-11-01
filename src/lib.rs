@@ -21,7 +21,7 @@ extern "C" {
     // signatures. Note that we need to use `js_name` to ensure we always call
     // `log` in JS.
     #[wasm_bindgen(js_namespace = console, js_name = log)]
-    fn log_f64(a: f64, b: &str);
+    fn log_f32(a: f32, b: &str);
 
     // log usize and what it represents
     #[wasm_bindgen(js_namespace = console, js_name = log)]
@@ -35,12 +35,12 @@ extern "C" {
 #[wasm_bindgen]
 pub struct FluidConfig {
     n: u16,
-    diffusion: f64,
+    diffusion: f32,
 }
 
 #[wasm_bindgen]
 impl FluidConfig {
-    pub fn new(n: u16, diffusion: f64) -> FluidConfig {
+    pub fn new(n: u16, diffusion: f32) -> FluidConfig {
         FluidConfig { n, diffusion }
     }
 }
@@ -48,7 +48,7 @@ impl FluidConfig {
 #[wasm_bindgen]
 pub struct Fluid {
     config: FluidConfig,
-    dt: f64,
+    dt: f32,
     velocity_x: PropertyType,
     velocity_y: PropertyType,
     initial_velocity_x: PropertyType,
@@ -58,12 +58,14 @@ pub struct Fluid {
     density: PropertyType,
     initial_density: PropertyType,
     density_source: PropertyType,
+    poisson_values: PropertyType,
+    divergence_values: PropertyType,
     size: u16,
 }
 
 #[wasm_bindgen]
 impl Fluid {
-    pub fn new(config: FluidConfig, dt: f64) -> Fluid {
+    pub fn new(config: FluidConfig, dt: f32) -> Fluid {
         set_panic_hook();
         let size = (config.n + 2) * (config.n + 2);
         let vector_size = size.into();
@@ -79,6 +81,8 @@ impl Fluid {
             density: vec![0.0; vector_size],
             initial_density: vec![0.0; vector_size],
             density_source: vec![0.0; vector_size],
+            poisson_values: vec![0.0; vector_size],
+            divergence_values: vec![0.0; vector_size],
             size,
         }
     }
@@ -92,11 +96,12 @@ impl Fluid {
 
     fn density_step(&mut self) {
         add_source!(
-            self.density,
+            self.initial_density,
             self.density_source,
             self.size as usize,
             self.dt
         );
+
         diffuse!(
             self.config.n,
             0,
@@ -136,7 +141,6 @@ impl Fluid {
             self.dt
         );
 
-        // std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
         diffuse!(
             self.config.n,
             1,
@@ -146,7 +150,8 @@ impl Fluid {
             self.dt
         );
 
-        // std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
+        std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
+
         diffuse!(
             self.config.n,
             2,
@@ -156,52 +161,56 @@ impl Fluid {
             self.dt
         );
 
-        // project!(
-        //     self.config.n,
-        //     self.velocity_x,
-        //     self.velocity_y,
-        //     self.initial_velocity_x,
-        //     self.initial_velocity_y
-        // );
+        std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
 
-        // std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
-        // std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
+        project!(
+            self.config.n,
+            self.velocity_x,
+            self.velocity_y,
+            self.poisson_values,
+            self.divergence_values
+        );
 
-        // advect!(
-        //     self.config.n,
-        //     1,
-        //     self.velocity_x,
-        //     self.initial_velocity_x,
-        //     self.velocity_x,
-        //     self.velocity_y,
-        //     self.dt
-        // );
-        // advect!(
-        //     self.config.n,
-        //     2,
-        //     self.velocity_y,
-        //     self.initial_velocity_y,
-        //     self.velocity_x,
-        //     self.velocity_y,
-        //     self.dt
-        // );
-        // project!(
-        //     self.config.n,
-        //     self.velocity_x,
-        //     self.velocity_y,
-        //     self.initial_velocity_x,
-        //     self.initial_velocity_y
-        // );
+        std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
+        std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
+
+        advect!(
+            self.config.n,
+            1,
+            self.velocity_x,
+            self.initial_velocity_x,
+            self.velocity_x,
+            self.velocity_y,
+            self.dt
+        );
+
+        advect!(
+            self.config.n,
+            2,
+            self.velocity_y,
+            self.initial_velocity_y,
+            self.velocity_x,
+            self.velocity_y,
+            self.dt
+        );
+
+        project!(
+            self.config.n,
+            self.velocity_x,
+            self.velocity_y,
+            self.poisson_values,
+            self.divergence_values
+        );
 
         std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
         std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
     }
 
-    pub fn add_density(&mut self, index: usize, value: f64) {
+    pub fn add_density(&mut self, index: usize, value: f32) {
         self.density_source[index] = value;
     }
 
-    pub fn add_velocity(&mut self, index: usize, value_x: f64, value_y: f64) {
+    pub fn add_velocity(&mut self, index: usize, value_x: f32, value_y: f32) {
         self.velocity_x_source[index] = value_x;
         self.velocity_y_source[index] = value_y;
     }
@@ -209,12 +218,9 @@ impl Fluid {
     pub fn simulate(&mut self) {
         self.velocity_step();
         self.density_step();
-        // std::mem::swap(&mut self.density, &mut self.initial_density);
-        // std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
-        // std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
     }
 
-    pub fn get_density_at_index(&self, index: usize) -> f64 {
+    pub fn get_density_at_index(&self, index: usize) -> f32 {
         self.density[index]
     }
 
@@ -226,14 +232,14 @@ impl Fluid {
         self.size
     }
 
-    pub fn set_dt(&mut self, dt: f64) {
+    pub fn set_dt(&mut self, dt: f32) {
         self.dt = dt
     }
 
-    pub fn get_velocity_X(&self, index: usize) -> f64 {
+    pub fn get_velocity_X(&self, index: usize) -> f32 {
         self.velocity_x[index]
     }
-    pub fn get_velocity_y(&self, index: usize) -> f64 {
+    pub fn get_velocity_y(&self, index: usize) -> f32 {
         self.velocity_y[index]
     }
     pub fn get_density_expensive(&self) -> PropertyType {

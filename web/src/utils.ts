@@ -1,10 +1,27 @@
+export const getClientValues = (event: MouseEvent | TouchEvent) => {
+  const clientX =
+    event.type === "mousemove" || event.type === "click"
+      ? (event as MouseEvent).clientX
+      : (event as TouchEvent).changedTouches[
+          (event as TouchEvent).changedTouches.length - 1
+        ].clientX;
+  const clientY =
+    event.type === "mousemove" || event.type === "click"
+      ? (event as MouseEvent).clientY
+      : (event as TouchEvent).changedTouches[
+          (event as TouchEvent).changedTouches.length - 1
+        ].clientY;
+  return [clientX, clientY];
+};
+
 export const getEventLocation = (
-  e: MouseEvent,
-  n: number
+  n: number,
+  rect: DOMRect,
+  clientX: number,
+  clientY: number
 ): [number, number] => {
-  const rect = (e.target as HTMLButtonElement).getBoundingClientRect();
-  const x = e.clientX - rect.left; //x position within the element.
-  const y = e.clientY - rect.top; //y position within the element.
+  const x = clientX - rect.left; //x position within the element.
+  const y = clientY - rect.top; //y position within the element.
   const hRatio = n / rect.height;
   const wRatio = n / rect.width;
   const convertedX = Math.round(x * wRatio);
@@ -113,3 +130,48 @@ export const m3 = {
     ];
   },
 };
+
+export const gaussSeidel1 = (
+  functions: ((...args: number[]) => number)[],
+  initialValues: number[],
+  iter: number
+): number[] => {
+  const initialValuesClone = [...initialValues];
+  for (let i = 0; i < iter; i++) {
+    initialValues.forEach((_, index) => {
+      initialValuesClone[index] = functions[index](...initialValuesClone);
+    });
+  }
+  return initialValuesClone;
+};
+
+export const round = (number: number, precision: number) =>
+  Math.round((number + Number.EPSILON) * precision) / precision;
+
+export const lerp = (a: number, b: number, k: number) => a + k * (b - a);
+
+export const getMultipliers = (
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+): [number, number] => {
+  let x = 0;
+  let y = 0;
+  if (x2 - x1 > 0) {
+    x = 1;
+  }
+  if (x2 - x1 < 0) {
+    x = -1;
+  }
+  if (y2 - y1 > 0) {
+    y = 1;
+  }
+  if (y2 - y1 < 0) {
+    y = -1;
+  }
+  return [x, y];
+};
+
+export const random = (min: number, max: number) =>
+  Math.floor(Math.random() * (max - min)) + min;

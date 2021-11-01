@@ -5,6 +5,9 @@ import {
   m3,
   resizeCanvasToDisplaySize,
   getEventLocation,
+  random,
+  getMultipliers,
+  getClientValues,
 } from "./utils";
 
 export default class Renderer {
@@ -16,7 +19,6 @@ export default class Renderer {
   private vertices: Float32Array;
   private fluid: Fluid;
   private densityPerVertex: Float32Array;
-  private then = 0;
   private defaultMouseEventState = {
     mouseDown: false,
     dragging: false,
@@ -32,10 +34,12 @@ export default class Renderer {
     locations: {
       positionAttributeLocation: number | null;
       densityAttributeLocation: number | null;
+      velocityAttributeLocation: number | null;
     };
     buffers: {
       positionBuffer: WebGLBuffer | null;
       densityBuffer: WebGLBuffer | null;
+      velocityBuffer: WebGLBuffer | null;
     };
   };
 
@@ -71,66 +75,129 @@ export default class Renderer {
       locations: {
         positionAttributeLocation: null,
         densityAttributeLocation: null,
+        velocityAttributeLocation: null,
       },
       buffers: {
         positionBuffer: null,
         densityBuffer: null,
+        velocityBuffer: null,
       },
     };
     this.addEventHandlers();
     this.initializeWebGL();
   }
 
-  addV(x: number, y: number) {
-    let amtX = y - Math.abs(this.mouseEventState.pos.x);
-    let amtY = x - Math.abs(this.mouseEventState.pos.y);
-    this.fluid.add_velocity(
-      this.fluid.ix(y, x),
-      Math.random() * 50,
-      Math.random() * 50
+  addV(x: number, y: number, clientX: number, clientY: number) {
+    const rect = this.canvas.getBoundingClientRect();
+    const eventX = clientX - rect.left; //x position within the element.
+    const eventY = clientY - rect.top; //y position within the element.
+    let prevPos = this.mouseEventState.pos;
+    const [multiX, multiY] = getMultipliers(
+      prevPos.x,
+      prevPos.y,
+      eventX,
+      eventY
     );
+    this.fluid.add_velocity(this.fluid.ix(x, y), 200 * multiX, 200 * multiY);
+    this.storeEventLocation(clientX, clientY);
   }
 
   addD(x: number, y: number) {
-    this.fluid.add_density(
-      this.fluid.ix(y, x),
-      Math.floor(Math.random() * (5 - 1 + 1)) + 1
-    );
+    this.fluid.add_density(this.fluid.ix(x, y), random(5, 10));
   }
 
-  handleEvent = (x: number, y: number) => {
+  storeEventLocation = (clientX: number, clientY: number) => {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = clientX - rect.left; //x position within the element.
+    const y = clientY - rect.top; //y position within the element.
+    this.mouseEventState.pos = {
+      x,
+      y,
+    };
+  };
+
+  handleEvent = (x: number, y: number, clientX: number, clientY: number) => {
     if (this.mode === 0) {
-      this.addV(x, y);
+      this.addV(x, y, clientX, clientY);
       this.addD(x, y);
     } else if (this.mode === 1) {
-      this.addV(x, y);
+      this.addV(x, y, clientX, clientY);
     } else if (this.mode === 2) {
       this.addD(x, y);
     }
-
-    this.mouseEventState.pos.x = y;
-    this.mouseEventState.pos.y = x;
-    // this.fluid.simulate();
   };
 
   addEventHandlers() {
     const n = this.fluid.get_n();
-    this.canvas.addEventListener("mousedown", () => {
+    this.canvas.addEventListener("mousedown", (e) => {
       this.mouseEventState = { ...this.mouseEventState, mouseDown: true };
     });
 
     this.canvas.addEventListener("mousemove", (e) => {
       if (this.mouseEventState.mouseDown) {
         this.mouseEventState = { ...this.mouseEventState, dragging: true };
-        this.handleEvent(...getEventLocation(e, n));
+        const [clientX, clientY] = getClientValues(e);
+        this.handleEvent(
+          ...getEventLocation(
+            n,
+            (e.target as HTMLCanvasElement).getBoundingClientRect(),
+            clientX,
+            clientY
+          ),
+          clientX,
+          clientY
+        );
+      }
+    });
+
+    this.canvas.addEventListener("touchmove", (e) => {
+      if (this.mouseEventState.mouseDown) {
+        this.mouseEventState = { ...this.mouseEventState, dragging: true };
+        const [clientX, clientY] = getClientValues(e);
+        this.handleEvent(
+          ...getEventLocation(
+            n,
+            (e.target as HTMLCanvasElement).getBoundingClientRect(),
+            clientX,
+            clientY
+          ),
+          clientX,
+          clientY
+        );
       }
     });
 
     this.canvas.addEventListener("click", (e) => {
-      this.handleEvent(...getEventLocation(e, n));
+      const [clientX, clientY] = getClientValues(e);
+      this.handleEvent(
+        ...getEventLocation(
+          n,
+          (e.target as HTMLCanvasElement).getBoundingClientRect(),
+          clientX,
+          clientY
+        ),
+        clientX,
+        clientY
+      );
+    });
+
+    this.canvas.addEventListener("touchstart", (e) => {
+      this.mouseEventState = { ...this.mouseEventState, mouseDown: true };
     });
 
     this.canvas.addEventListener("mouseup", () => {
+      this.mouseEventState = { ...this.defaultMouseEventState };
+    });
+
+    this.canvas.addEventListener("touchend", () => {
+      this.mouseEventState = { ...this.defaultMouseEventState };
+    });
+
+    this.canvas.addEventListener("mouseout", () => {
+      this.mouseEventState = { ...this.defaultMouseEventState };
+    });
+
+    this.canvas.addEventListener("touchcancel", () => {
       this.mouseEventState = { ...this.defaultMouseEventState };
     });
   }
@@ -154,11 +221,11 @@ export default class Renderer {
 
     const fsGLSL: string = `
     precision mediump float;
-  
+
     varying float v_density;
-  
+
     void main() {
-      gl_FragColor = vec4(v_density * 0.2, v_density * 0.1, v_density * 0.5, 1);
+      gl_FragColor = vec4(v_density * 1.0, v_density * 0.0, v_density * 1.0, 1);
     }
   `;
 
@@ -205,8 +272,8 @@ export default class Renderer {
     for (let i = 0; i < n + 2; i++) {
       for (let j = 0; j < n + 2; j++) {
         const center = [
-          halfSquare * 2 * i + halfSquare,
           halfSquare * 2 * j + halfSquare,
+          halfSquare * 2 * i + halfSquare,
         ];
 
         // Vertex 1 coords
@@ -245,14 +312,8 @@ export default class Renderer {
     for (let i = 1; i <= n; i++) {
       for (let j = 1; j <= n; j++) {
         const index = this.fluid.ix(i, j);
-        const vx = this.fluid.get_velocity_X(index);
-        const vy = this.fluid.get_velocity_y(index);
-        // if (vx !== 0 && vy !== 0) {
-        //   console.log(vx, vy);
-        // }
         for (let i = index * 6; i < index * 6 + 6; i++) {
-          this.densityPerVertex[i] =
-            this.fluid.get_density_at_index(index) * 100;
+          this.densityPerVertex[i] = this.fluid.get_density_at_index(index);
         }
       }
     }
@@ -311,11 +372,6 @@ export default class Renderer {
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6 * size);
   }
   private draw(now: number) {
-    now *= 0.001;
-    // Subtract the next time from the current time
-    // this.fluid.set_dt(now - this.then);
-    // Remember the current time for the next frame.
-    this.then = now;
     this.render();
     requestAnimationFrame(this.draw.bind(this));
   }
