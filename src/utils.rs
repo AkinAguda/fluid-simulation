@@ -44,22 +44,22 @@ macro_rules! set_bnd {
     ($n:expr, $b:expr, $property:expr) => {
         for i in 1..($n + 1) {
             $property[pure_ix_fn(0, i, $n)] = if ($b == 1) {
-                -1.0 * $property[pure_ix_fn(1, i, $n)]
+                -$property[pure_ix_fn(1, i, $n)]
             } else {
                 $property[pure_ix_fn(1, i, $n)]
             };
             $property[pure_ix_fn($n + 1, i, $n)] = if ($b == 1) {
-                -1.0 * $property[pure_ix_fn($n, i, $n)]
+                -$property[pure_ix_fn($n, i, $n)]
             } else {
                 $property[pure_ix_fn($n, i, $n)]
             };
             $property[pure_ix_fn(i, 0, $n)] = if ($b == 2) {
-                -1.0 * $property[pure_ix_fn(i, 1, $n)]
+                -$property[pure_ix_fn(i, 1, $n)]
             } else {
                 $property[pure_ix_fn(i, 1, $n)]
             };
             $property[pure_ix_fn(i, $n + 1, $n)] = if ($b == 2) {
-                -1.0 * $property[pure_ix_fn(i, $n, $n)]
+                -$property[pure_ix_fn(i, $n, $n)]
             } else {
                 $property[pure_ix_fn(i, $n, $n)]
             };
@@ -83,7 +83,7 @@ macro_rules! advect {
                 let index = pure_ix_fn(i, j, $n) as usize;
 
                 let inital_pos_x = i as f32 - $velocity_x[pure_ix_fn(i, j, $n)] * $dt;
-                let inital_pos_y = i as f32 - $velocity_y[pure_ix_fn(i, j, $n)] * $dt;
+                let inital_pos_y = j as f32 - $velocity_y[pure_ix_fn(i, j, $n)] * $dt;
 
                 let imaginary_x = inital_pos_x.fract();
                 let imaginary_y = inital_pos_y.fract();
@@ -172,7 +172,7 @@ macro_rules! project {
 #[macro_export]
 macro_rules! diffuse {
     ($n:expr, $b:expr, $property:expr, $prev_property:expr, $diffusion:expr, $dt:expr) => {
-        let k = $dt * $diffusion * $n as f32 * $n as f32;
+        let k = $dt * $diffusion;
         for _ in 0..10 {
             for i in 1..$n + 1 {
                 for j in 1..$n + 1 {

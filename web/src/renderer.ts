@@ -371,7 +371,7 @@ export default class Renderer {
 
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6 * size);
   }
-  private draw(now: number) {
+  private draw() {
     this.render();
     requestAnimationFrame(this.draw.bind(this));
   }

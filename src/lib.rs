@@ -128,14 +128,14 @@ impl Fluid {
 
     fn velocity_step(&mut self) {
         add_source!(
-            self.velocity_x,
+            self.initial_velocity_x,
             self.velocity_x_source,
             self.size as usize,
             self.dt
         );
 
         add_source!(
-            self.velocity_y,
+            self.initial_velocity_y,
             self.velocity_y_source,
             self.size as usize,
             self.dt
