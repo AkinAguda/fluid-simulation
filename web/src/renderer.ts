@@ -1,4 +1,4 @@
-import { Fluid } from "fluid";
+import { Fluid, FluidConfig } from "fluid";
 import {
   createProgram,
   createShader,
@@ -13,7 +13,7 @@ import {
 export default class Renderer {
   private canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;
-  //   private resetButton: HTMLButtonElement;
+  private clearButton: HTMLButtonElement;
   private modeButton: HTMLButtonElement;
   private mode = 0;
   private vertices: Float32Array;
@@ -43,9 +43,10 @@ export default class Renderer {
     };
   };
 
-  constructor(fluid: Fluid) {
+  constructor(fluidConfig: FluidConfig, dt: 0.6) {
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl");
+    this.clearButton = document.getElementById("clear") as HTMLButtonElement;
     resizeCanvasToDisplaySize(this.gl.canvas);
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
     this.gl.clearColor(0, 0, 0, 0);
@@ -67,10 +68,12 @@ export default class Renderer {
       }
     };
 
-    // this.resetButton = document.getElementById("reset") as HTMLButtonElement;
-    this.fluid = fluid;
-    this.vertices = new Float32Array(fluid.get_size() * 12);
-    this.densityPerVertex = new Float32Array(fluid.get_size() * 6);
+    this.fluid = Fluid.new(fluidConfig, dt);
+    this.clearButton.onclick = () => {
+      this.fluid.clear();
+    };
+    this.vertices = new Float32Array(this.fluid.get_size() * 12);
+    this.densityPerVertex = new Float32Array(this.fluid.get_size() * 6);
     this.webglData = {
       locations: {
         positionAttributeLocation: null,
@@ -371,19 +374,15 @@ export default class Renderer {
 
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6 * size);
   }
-  private draw() {
+  private draw = () => {
     this.render();
-    requestAnimationFrame(this.draw.bind(this));
-  }
+    requestAnimationFrame(this.draw);
+  };
 
   start() {
-    setInterval(() => {
-      console.log("DENSITY", this.fluid.get_density_expensive());
-      console.log("VELOCITY X", this.fluid.get_velocity_x_expensive());
-      // console.log(
-      //   this.fluid.get_density_expensive().map((s) => formatDec(s) / 10)
-      // );
-    }, 4000);
-    requestAnimationFrame(this.draw.bind(this));
+    // setInterval(() => {
+    // // Add any debug logs
+    // }, 4000);
+    requestAnimationFrame(this.draw);
   }
 }

@@ -15,4 +15,4 @@ The Coding Train's [video](https://www.youtube.com/watch?v=alhpH6ECFvQ&t)<br>
 ## Contribution
 
 - Run `wasm-pack-build` to compile rust code to web assembly<br>
-- `cd` into the `web` directory and run `npm run start:dev` the application will open up on localhost:8000
+- `cd` into the `web` directory and run `npm run start:dev` the application will open up on `localhost:8000`

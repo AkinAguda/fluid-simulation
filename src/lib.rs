@@ -51,6 +51,7 @@ impl FluidConfig {
 pub struct Fluid {
     config: FluidConfig,
     dt: f32,
+    empty_property: PropertyType,
     velocity_x: PropertyType,
     velocity_y: PropertyType,
     initial_velocity_x: PropertyType,
@@ -74,6 +75,7 @@ impl Fluid {
         Fluid {
             config,
             dt,
+            empty_property: vec![0.0; vector_size],
             velocity_x: vec![0.0; vector_size],
             velocity_y: vec![0.0; vector_size],
             initial_velocity_x: vec![0.0; vector_size],
@@ -202,6 +204,20 @@ impl Fluid {
     }
 
     // All public methods
+
+    pub fn clear(&mut self) {
+        self.velocity_x = self.empty_property.clone();
+        self.velocity_y = self.empty_property.clone();
+        self.initial_velocity_x = self.empty_property.clone();
+        self.initial_velocity_y = self.empty_property.clone();
+        self.velocity_x_source = self.empty_property.clone();
+        self.velocity_y_source = self.empty_property.clone();
+        self.density = self.empty_property.clone();
+        self.initial_density = self.empty_property.clone();
+        self.density_source = self.empty_property.clone();
+        self.poisson_values = self.empty_property.clone();
+        self.divergence_values = self.empty_property.clone();
+    }
 
     pub fn ix(&self, x: u16, y: u16) -> u16 {
         let mut new_x = cmp::min(x, self.config.n + 1);
