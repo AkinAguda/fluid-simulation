@@ -14,5 +14,7 @@ The Coding Train's [video](https://www.youtube.com/watch?v=alhpH6ECFvQ&t)<br>
 
 ## Contribution
 
+Assuming you have [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/) installed:
+
 - Run `wasm-pack-build` to compile rust code to web assembly<br>
 - `cd` into the `web` directory and run `npm run start:dev` the application will open up on `localhost:8000`
