@@ -1,7 +1,9 @@
 #!/bin/bash
 
-echo -e "\e[1;33m BUILDING... Installing cargo \e[0m"
+echo -e "\e[1;33m BUILDING... Installing ans setting up cargo \e[0m"
 curl https://sh.rustup.rs -sSf | sh &&
+rustup install stable &&
+rustup default stable &&
 echo -e "\e[1;32m BUILDING... Cargo Installed sucessfully \e[0m"
 
 echo -e "\e[1;33m BUILDING... Installing wasm-pack \e[0m"
