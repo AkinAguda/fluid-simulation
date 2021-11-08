@@ -1,6 +1,8 @@
+mod constants;
 mod utils;
-use std::cmp;
 
+use constants::GAUSS_SEIDEL_ITERATIONS;
+use std::cmp;
 use utils::{lerp, pure_ix_fn, set_panic_hook, PropertyType};
 use wasm_bindgen::prelude::*;
 
@@ -85,13 +87,6 @@ impl Fluid {
             divergence_values: vec![0.0; vector_size],
             size,
         }
-    }
-    pub fn ix(&self, x: u16, y: u16) -> u16 {
-        let mut new_x = cmp::min(x, self.config.n + 1);
-        new_x = cmp::max(0, new_x);
-        let mut new_y = cmp::min(y, self.config.n + 1);
-        new_y = cmp::max(0, new_y);
-        new_x + (self.config.n + 2) * new_y
     }
 
     fn density_step(&mut self) {
@@ -206,6 +201,16 @@ impl Fluid {
         std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
     }
 
+    // All public methods
+
+    pub fn ix(&self, x: u16, y: u16) -> u16 {
+        let mut new_x = cmp::min(x, self.config.n + 1);
+        new_x = cmp::max(0, new_x);
+        let mut new_y = cmp::min(y, self.config.n + 1);
+        new_y = cmp::max(0, new_y);
+        new_x + (self.config.n + 2) * new_y
+    }
+
     pub fn add_density(&mut self, index: usize, value: f32) {
         self.density_source[index] = value;
     }
@@ -236,7 +241,7 @@ impl Fluid {
         self.dt = dt
     }
 
-    pub fn get_velocity_X(&self, index: usize) -> f32 {
+    pub fn get_velocity_x(&self, index: usize) -> f32 {
         self.velocity_x[index]
     }
     pub fn get_velocity_y(&self, index: usize) -> f32 {

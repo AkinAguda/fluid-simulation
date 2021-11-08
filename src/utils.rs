@@ -122,46 +122,48 @@ macro_rules! advect {
 
 #[macro_export]
 macro_rules! project {
-    ($n:expr, $velocity_x:expr, $velocity_y:expr, $poisson:expr, $divergence_values:expr) => {
+    ($n:expr, $velocity_x:expr, $velocity_y:expr, $poisson_values:expr, $divergence_values:expr) => {
         for i in 1..$n + 1 {
             for j in 1..$n + 1 {
                 let index = pure_ix_fn(i, j, $n);
                 let a =
                     $velocity_x[pure_ix_fn(i + 1, j, $n)] - $velocity_x[pure_ix_fn(i - 1, j, $n)];
                 let b =
-                    $velocity_y[pure_ix_fn(i, j + 1, $n)] - $velocity_y[pure_ix_fn(i, j + 1, $n)];
+                    $velocity_y[pure_ix_fn(i, j + 1, $n)] - $velocity_y[pure_ix_fn(i, j - 1, $n)];
 
                 $divergence_values[index] = 0.5 * (a + b);
-                $poisson[index] = 0.0;
+                $poisson_values[index] = 0.0;
             }
         }
 
         set_bnd!($n, 0, $divergence_values);
-        set_bnd!($n, 0, $poisson);
+        set_bnd!($n, 0, $poisson_values);
 
-        for _ in 0..10 {
+        for _ in 0..GAUSS_SEIDEL_ITERATIONS {
             for i in 1..$n + 1 {
                 for j in 1..$n + 1 {
                     let index = pure_ix_fn(i, j, $n);
-                    $poisson[index] = ($poisson[pure_ix_fn(i - 1, j, $n)]
-                        + $poisson[pure_ix_fn(i + 1, j, $n)]
-                        + $poisson[pure_ix_fn(i, j - 1, $n)]
-                        + $poisson[pure_ix_fn(i, j + 1, $n)]
+                    $poisson_values[index] = ($poisson_values[pure_ix_fn(i - 1, j, $n)]
+                        + $poisson_values[pure_ix_fn(i + 1, j, $n)]
+                        + $poisson_values[pure_ix_fn(i, j - 1, $n)]
+                        + $poisson_values[pure_ix_fn(i, j + 1, $n)]
                         - $divergence_values[index])
                         / 4.0
                 }
             }
         }
 
-        set_bnd!($n, 0, $poisson);
+        set_bnd!($n, 0, $poisson_values);
 
         for i in 1..$n + 1 {
             for j in 1..$n + 1 {
                 let index = pure_ix_fn(i, j, $n);
-                $velocity_x[index] -=
-                    ($poisson[pure_ix_fn(i + 1, j, $n)] - $poisson[pure_ix_fn(i - 1, j, $n)]) * 0.5;
-                $velocity_y[index] -=
-                    ($poisson[pure_ix_fn(i, j + 1, $n)] - $poisson[pure_ix_fn(i, j - 1, $n)]) * 0.5;
+                $velocity_x[index] -= ($poisson_values[pure_ix_fn(i + 1, j, $n)]
+                    - $poisson_values[pure_ix_fn(i - 1, j, $n)])
+                    * 0.5;
+                $velocity_y[index] -= ($poisson_values[pure_ix_fn(i, j + 1, $n)]
+                    - $poisson_values[pure_ix_fn(i, j - 1, $n)])
+                    * 0.5;
             }
         }
         set_bnd!($n, 1, $velocity_x);
@@ -173,16 +175,16 @@ macro_rules! project {
 macro_rules! diffuse {
     ($n:expr, $b:expr, $property:expr, $prev_property:expr, $diffusion:expr, $dt:expr) => {
         let k = $dt * $diffusion;
-        for _ in 0..10 {
+        for _ in 0..GAUSS_SEIDEL_ITERATIONS {
             for i in 1..$n + 1 {
                 for j in 1..$n + 1 {
                     let index = pure_ix_fn(i, j, $n) as usize;
 
                     $property[index] = ($prev_property[index]
-                        + (k * ($property[pure_ix_fn(i - 1, j, $n) as usize]
-                            + $property[pure_ix_fn(i + 1, j, $n) as usize]
-                            + $property[pure_ix_fn(i, j - 1, $n) as usize]
-                            + $property[pure_ix_fn(i, j + 1, $n) as usize]))
+                        + (k * ($property[pure_ix_fn(i + 1, j, $n) as usize]
+                            + $property[pure_ix_fn(i - 1, j, $n) as usize]
+                            + $property[pure_ix_fn(i, j + 1, $n) as usize]
+                            + $property[pure_ix_fn(i, j - 1, $n) as usize]))
                             / 4.0)
                         / (1.0 + k)
                 }
