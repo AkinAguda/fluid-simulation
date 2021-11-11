@@ -1,10 +1,99 @@
+:root {
+  --accent2: rgb(20, 15, 111);
+  --accent: rgb(92, 11, 92);
+  --pale-accent: rgba(0, 128, 0, 0.2);
+  --dark: black;
+  --gradient: linear-gradient(115deg, #e626bd, #6144ff 70%);
+  --box-shadow: 1px 10px 40px -13px rgba(73, 56, 198, 1);
+  --pale-light: rgba(255, 255, 255, 0.7);
+  --progress-height: 5px;
+}
+
+@keyframes open {
+  0% {
+    opacity: 0;
+    transform: translateY(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(20px);
+  }
+}
+
+@keyframes close {
+  0% {
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0px);
+  }
+}
+
 #canvas {
-  /* height: 100vh;
-    width: 100vw; */
   height: 500px;
   width: 500px;
   max-width: 90vw;
-  /* border: 2px solid red; */
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  z-index: 1;
+  box-shadow: var(--box-shadow);
+}
+
+#config-wrapper {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  z-index: 2;
+}
+
+#config-trigger {
+  height: 50px;
+  width: 50px;
+  box-shadow: var(--box-shadow);
+  border-radius: 100%;
+  transition: 0.5s;
+  background-size: contain;
+  background: var(--gradient);
+  border: none;
+}
+
+#config-trigger:hover {
+  cursor: pointer;
+  background-color: var(--pale-accent);
+  transform: scale(1.1);
+}
+
+#config-dropdown {
+  max-width: 300px;
+  width: 80vw;
+  border: 1px solid var(--accent);
+  border-radius: var(--progress-height);
+  overflow: hidden;
+  box-shadow: var(--box-shadow);
+  margin: 0;
+  padding: 35px 20px;
+  background-color: var(--dark);
+}
+
+#config-dropdown > li {
+  list-style-type: none;
+  margin-bottom: 30px;
+}
+
+#config-dropdown > li:last-child {
+  margin-bottom: 0;
+}
+
+.open {
+  animation: open 0.3s forwards;
+}
+
+.close {
+  animation: close 0.3s forwards;
 }
 
 body,
@@ -16,22 +105,143 @@ html {
   align-items: center;
   justify-content: center;
   height: 100vh;
+  width: 100vw;
   flex-direction: column;
+  background-color: var(--dark);
 }
 
-.button-box {
+#button-box {
   margin-top: 30px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-button {
-  height: 40px;
-  width: 100px;
-  background-color: black;
-  color: white;
-  cursor: pointer;
+.progress {
+  background-image: var(--gradient);
+  width: 50%;
+  height: var(--progress-height);
+  border-radius: 30px;
+  position: absolute;
+  left: 0;
+  z-index: 2;
+  top: 2.5px;
+}
+
+.meter {
+  width: 100%;
+  position: relative;
+  margin-right: 25px;
+}
+
+.title {
+  color: var(--pale-light);
+  font-size: 10px;
+  font-family: sans-serif;
+  letter-spacing: 1px;
+}
+
+.range {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: var(--progress-height);
+  -webkit-appearance: none;
+  width: 100%;
+  background: transparent;
+  z-index: 3;
+}
+
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 10px;
+  width: 12px;
+  box-shadow: var(--box-shadow);
+  border-radius: 30px;
+  transition: 0.5s;
+  background-size: contain;
+  background: rgb(255, 255, 255);
   border: none;
-  font-size: 20px;
+  cursor: pointer;
+}
+
+.range:focus {
+  outline: none;
+}
+
+.range::-ms-track {
+  width: 100%;
+  cursor: pointer;
+  border-color: transparent;
+  color: transparent;
+}
+
+.controller {
+  width: 100%;
+  margin-bottom: 100px;
+}
+
+.controllers {
+  display: flex;
+  align-items: center;
+  height: 20px;
+}
+
+.value-box {
+  width: 40px;
+  height: 30px;
+  border: none;
+  background-color: transparent;
+  color: var(--pale-light);
+  border-bottom: 2px solid var(--accent1);
+  font-size: 10px;
+  font-weight: bold;
+  padding: 0;
+  margin-top: 5px;
+}
+
+.track {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  background-color: rgb(19, 4, 36);
+  height: var(--progress-height);
+  border-radius: 30px;
+  top: 2.5px;
+}
+
+.intro {
+  margin: 0 auto 20px auto;
+  color: white;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+.intro > h1 {
+  font-size: 50px;
+  margin-bottom: 0px;
+}
+
+.intro > h2 {
+  font-size: 25px;
+  margin-top: 0px;
+  font-weight: normal;
+}
+
+.intro > h2 > a {
+  color: white;
+}
+
+.config-button {
+  background: var(--gradient);
+  height: 40px;
+  padding: 0 30px;
+  border-radius: 40px;
+  width: 100%;
+  color: white;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
 }

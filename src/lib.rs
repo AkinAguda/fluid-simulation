@@ -45,6 +45,14 @@ impl FluidConfig {
     pub fn new(n: u16, diffusion: f32) -> FluidConfig {
         FluidConfig { n, diffusion }
     }
+
+    pub fn set_diffusion(&mut self, diffusion: f32) {
+        self.diffusion = diffusion
+    }
+
+    pub fn get_diffusion(&self) -> f32 {
+        self.diffusion
+    }
 }
 
 #[wasm_bindgen]
@@ -273,5 +281,9 @@ impl Fluid {
 
     pub fn get_velocity_y_expensive(&self) -> PropertyType {
         self.velocity_y.clone()
+    }
+
+    pub fn set_config_diffusion(&mut self, value: f32) {
+        self.config.set_diffusion(value)
     }
 }
