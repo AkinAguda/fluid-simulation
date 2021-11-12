@@ -228,10 +228,18 @@ html {
   font-size: 25px;
   margin-top: 0px;
   font-weight: normal;
+  margin-bottom: 5px;
 }
 
 .intro > h2 > a {
   color: white;
+}
+
+.intro > a {
+  display: block;
+  color: white;
+  margin: 0;
+  margin-bottom: 20px;
 }
 
 .config-button {
