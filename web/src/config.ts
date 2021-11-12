@@ -13,7 +13,10 @@ export class RangeConfig {
   private valueInput: HTMLInputElement;
   private rangeInput: HTMLInputElement;
   private progress: HTMLDivElement;
-  constructor(private options: RangeConfigOptions) {
+  constructor(
+    private options: RangeConfigOptions,
+    onInstanceCreated?: (range: RangeConfig) => void
+  ) {
     this.controller = document.createElement("div");
     const title = document.createElement("div");
     const controllers = document.createElement("div");
@@ -58,10 +61,37 @@ export class RangeConfig {
     this.valueInput.value = options.value.toString();
 
     this.controller.appendChild(controllers);
+
+    if (onInstanceCreated) onInstanceCreated(this);
   }
 
   getElement = () => {
     return this.controller;
+  };
+
+  handleRangeInput = (val: number) => {
+    let value = val.toString();
+    this.valueInput.value = value;
+    this.setProgressWidth(val);
+    this.options.onInput(parseFloat(value));
+  };
+
+  handleValueInput = (val: number) => {
+    let value = val.toString();
+    if (val >= this.options.min && val <= this.options.max) {
+      this.rangeInput.value = value;
+      this.setProgressWidth(val);
+      this.options.onInput(parseFloat(value));
+    } else if (val < this.options.min) {
+      this.valueInput.value = this.options.min.toString();
+    } else if (val > this.options.max) {
+      this.valueInput.value = this.options.max.toString();
+    }
+  };
+
+  private onRangeInput = (e: any) => {
+    const value = e.target.value;
+    this.handleRangeInput(parseFloat(value));
   };
 
   private setProgressWidth = (value: number) => {
@@ -71,24 +101,9 @@ export class RangeConfig {
     ).toString()}%`;
   };
 
-  private onRangeInput = (e: any) => {
-    const value = e.target.value;
-    this.valueInput.value = value;
-    this.setProgressWidth(value);
-    this.options.onInput(parseFloat(value));
-  };
-
   private onValueInput = (e: any) => {
     const value = e.target.value;
-    if (value >= this.options.min && value <= this.options.max) {
-      this.rangeInput.value = value;
-      this.setProgressWidth(value);
-      this.options.onInput(parseFloat(value));
-    } else if (value < this.options.min) {
-      this.valueInput.value = this.options.min.toString();
-    } else if (value > this.options.max) {
-      this.valueInput.value = this.options.max.toString();
-    }
+    this.handleValueInput(parseFloat(value));
   };
 }
 

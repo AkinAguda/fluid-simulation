@@ -14,10 +14,11 @@ import {
 export default class Renderer {
   private canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;
-  // private clearButton: HTMLButtonElement;
-  // private modeButton: HTMLButtonElement;
-  private addedDensity = 5;
-  private addedVelocity = 200;
+  private rangeResetHandlers: Array<() => void> = [];
+  private defaultAddedDensity = 5;
+  private defaultAddedVelocity = 200;
+  private addedDensity = this.defaultAddedDensity;
+  private addedVelocity = this.defaultAddedVelocity;
   private mode = 0;
   private vertices: Float32Array;
   private fluid: Fluid;
@@ -46,36 +47,16 @@ export default class Renderer {
     };
   };
 
-  constructor(private fluidConfig: FluidConfig, dt: 0.6) {
+  constructor(fluidConfig: FluidConfig, dt: 0.6) {
     const initialDiffusion = fluidConfig.get_diffusion();
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl");
-    // this.clearButton = document.getElementById("clear") as HTMLButtonElement;
     resizeCanvasToDisplaySize(this.gl.canvas);
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
     this.gl.clearColor(0, 0, 0, 0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-    // this.modeButton = document.getElementById("mode") as HTMLButtonElement;
-    // this.modeButton.innerHTML = "All";
-    // this.modeButton.onclick = () => {
-    //   if (this.mode < 2) {
-    //     this.mode += 1;
-    //   } else {
-    //     this.mode = 0;
-    //   }
-    //   if (this.mode === 0) {
-    //     this.modeButton.innerHTML = "All";
-    //   } else if (this.mode === 1) {
-    //     this.modeButton.innerHTML = "Velocity";
-    //   } else if (this.mode === 2) {
-    //     this.modeButton.innerHTML = "Density";
-    //   }
-    // };
 
     this.fluid = Fluid.new(fluidConfig, dt);
-    // this.clearButton.onclick = () => {
-    //   this.fluid.clear();
-    // };
     this.vertices = new Float32Array(this.fluid.get_size() * 12);
     this.densityPerVertex = new Float32Array(this.fluid.get_size() * 6);
     this.webglData = {
@@ -93,58 +74,83 @@ export default class Renderer {
     this.addEventHandlers();
     this.initializeWebGL();
     new ConfigBox([
-      new RangeConfig({
-        key: "dt",
-        title: "Time Step",
-        value: 0.3,
-        min: 0.0,
-        max: 2.0,
-        step: 0.1,
-        onInput: (value) => {
-          this.fluid.set_dt(value);
+      new RangeConfig(
+        {
+          key: "dt",
+          title: "Time Step",
+          value: 0.3,
+          min: 0.0,
+          max: 2.0,
+          step: 0.1,
+          onInput: (value) => {
+            this.fluid.set_dt(value);
+          },
         },
-      }),
-      new RangeConfig({
-        key: "addedD",
-        title: "Added Density",
-        value: this.addedDensity,
-        min: 0,
-        max: 25,
-        step: 1,
-        onInput: (value) => {
-          this.addedDensity = value;
+        this.onRangeInstance(0.3)
+      ),
+      new RangeConfig(
+        {
+          key: "addedD",
+          title: "Added Density",
+          value: this.addedDensity,
+          min: 0,
+          max: 25,
+          step: 1,
+          onInput: (value) => {
+            this.addedDensity = value;
+          },
         },
-      }),
-      new RangeConfig({
-        key: "addedV",
-        title: "Added Velocity",
-        value: this.addedVelocity,
-        min: 0,
-        max: 2000,
-        step: 50,
-        onInput: (value) => {
-          this.addedVelocity = value;
+        this.onRangeInstance(this.defaultAddedDensity)
+      ),
+      new RangeConfig(
+        {
+          key: "addedV",
+          title: "Added Velocity",
+          value: this.addedVelocity,
+          min: 0,
+          max: 2000,
+          step: 50,
+          onInput: (value) => {
+            this.addedVelocity = value;
+          },
         },
-      }),
-      new RangeConfig({
-        key: "diff",
-        title: "Diffusion",
-        value: round(initialDiffusion, 100),
-        min: 0.0,
-        max: 2.0,
-        step: 0.1,
-        onInput: (value) => {
-          this.fluid.set_config_diffusion(value);
+        this.onRangeInstance(this.defaultAddedVelocity)
+      ),
+      new RangeConfig(
+        {
+          key: "diff",
+          title: "Diffusion",
+          value: round(initialDiffusion, 100),
+          min: 0.0,
+          max: 2.0,
+          step: 0.1,
+          onInput: (value) => {
+            this.fluid.set_config_diffusion(value);
+          },
         },
-      }),
+        this.onRangeInstance(round(initialDiffusion, 100))
+      ),
       new ButtonConfig({
         title: "Clear",
         onClick: () => {
           this.fluid.clear();
         },
       }),
+      new ButtonConfig({
+        title: "Reset",
+        onClick: () => {
+          this.rangeResetHandlers.forEach((handler) => handler());
+        },
+      }),
     ]);
   }
+
+  onRangeInstance = (defaultValue: number) => (range: RangeConfig) => {
+    this.rangeResetHandlers.push(() => {
+      range.handleRangeInput(defaultValue);
+      range.handleValueInput(defaultValue);
+    });
+  };
 
   addV = (x: number, y: number, clientX: number, clientY: number) => {
     const rect = this.canvas.getBoundingClientRect();
