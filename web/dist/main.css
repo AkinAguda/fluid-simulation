@@ -33,7 +33,7 @@
 #canvas {
   height: 500px;
   width: 500px;
-  max-width: 90vw;
+  max-width: 100%;
   border: 1px solid var(--accent);
   border-radius: 4px;
   z-index: 1;
@@ -48,9 +48,12 @@
   flex-direction: column;
   align-items: flex-end;
   z-index: 2;
+  max-height: 80vh;
 }
 
 #config-trigger {
+  min-height: 50px;
+  min-width: 50px;
   height: 50px;
   width: 50px;
   box-shadow: var(--box-shadow);
@@ -76,7 +79,9 @@
   box-shadow: var(--box-shadow);
   margin: 0;
   padding: 35px 20px;
+  box-sizing: border-box;
   background-color: var(--dark);
+  overflow-y: auto;
 }
 
 #config-dropdown > li {
@@ -100,14 +105,18 @@ body,
 html {
   padding: 0;
   margin: 0;
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh;
+  min-width: 100vw;
   flex-direction: column;
   background-color: var(--dark);
+}
+
+body {
+  padding: 30px 20px;
+  box-sizing: border-box;
 }
 
 #button-box {
@@ -217,6 +226,7 @@ html {
   color: white;
   font-family: sans-serif;
   text-align: center;
+  margin-top: 50px;
 }
 
 .intro > h1 {
