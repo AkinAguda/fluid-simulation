@@ -108,15 +108,19 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  min-width: 100vw;
   flex-direction: column;
   background-color: var(--dark);
+}
+
+html {
+  height: 100vh;
 }
 
 body {
   padding: 30px 20px;
   box-sizing: border-box;
+  height: 100%;
+  width: 100%;
 }
 
 #button-box {

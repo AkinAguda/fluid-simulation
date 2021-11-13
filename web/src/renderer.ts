@@ -15,7 +15,7 @@ export default class Renderer {
   private canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;
   private rangeResetHandlers: Array<() => void> = [];
-  private defaultAddedDensity = 5;
+  private defaultAddedDensity = 10;
   private defaultAddedVelocity = 200;
   private addedDensity = this.defaultAddedDensity;
   private addedVelocity = this.defaultAddedVelocity;
@@ -94,7 +94,7 @@ export default class Renderer {
           title: "Added Density",
           value: this.addedDensity,
           min: 0,
-          max: 25,
+          max: 40,
           step: 1,
           onInput: (value) => {
             this.addedDensity = value;
