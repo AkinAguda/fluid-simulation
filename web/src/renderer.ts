@@ -1,6 +1,7 @@
 import { Fluid, FluidConfig } from "fluid";
 import { round } from "./utils";
 import { RangeConfig, ConfigBox, ButtonConfig } from "./config";
+import { vs1, vs2, fs1, fs2 } from "./shaders";
 import {
   createProgram,
   createShader,
@@ -9,6 +10,8 @@ import {
   getEventLocation,
   getMultipliers,
   getClientValues,
+  setRectangle,
+  renderToATexture,
 } from "./utils";
 
 export default class Renderer {
@@ -34,51 +37,26 @@ export default class Renderer {
   mouseEventState = {
     ...this.defaultMouseEventState,
   };
-  private webglData: {
-    locations: {
-      positionAttributeLocation: number | null;
-      densityAttributeLocation: number | null;
-      velocityAttributeLocation: number | null;
-    };
-    buffers: {
-      positionBuffer: WebGLBuffer | null;
-      densityBuffer: WebGLBuffer | null;
-      velocityBuffer: WebGLBuffer | null;
-    };
-  };
+  private webglData: ReturnType<typeof this.initializeWebGL>;
 
-  constructor(fluidConfig: FluidConfig, dt: 0.6) {
+  constructor(fluidConfig: FluidConfig, dt: number) {
     const initialDiffusion = fluidConfig.get_diffusion();
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl");
     resizeCanvasToDisplaySize(this.gl.canvas);
-    this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-    this.gl.clearColor(0, 0, 0, 0);
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    // this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
 
     this.fluid = Fluid.new(fluidConfig, dt);
     this.vertices = new Float32Array(this.fluid.get_size() * 12);
     this.densityPerVertex = new Float32Array(this.fluid.get_size() * 6);
-    this.webglData = {
-      locations: {
-        positionAttributeLocation: null,
-        densityAttributeLocation: null,
-        velocityAttributeLocation: null,
-      },
-      buffers: {
-        positionBuffer: null,
-        densityBuffer: null,
-        velocityBuffer: null,
-      },
-    };
     this.addEventHandlers();
-    this.initializeWebGL();
+    this.webglData = this.initializeWebGL();
     new ConfigBox([
       new RangeConfig(
         {
           key: "dt",
           title: "Time Step",
-          value: 0.3,
+          value: dt,
           min: 0.0,
           max: 2.0,
           step: 0.1,
@@ -86,7 +64,7 @@ export default class Renderer {
             this.fluid.set_dt(value);
           },
         },
-        this.onRangeInstance(0.3)
+        this.onRangeInstance(dt)
       ),
       new RangeConfig(
         {
@@ -272,120 +250,145 @@ export default class Renderer {
   };
 
   private initializeWebGL = () => {
-    const vsGLSL: string = `
-    attribute vec2 a_position;
-    attribute float a_density;
-  
-    // This matrix is only responsible for converting my pixel coords to clipspace
-    uniform mat3 u_matrix;
-  
-    varying float v_density;
-  
-    void main() {
-        vec2 position = (u_matrix * vec3(a_position, 1)).xy;
-        gl_Position = vec4(position, 0, 1);
-        v_density = a_density;
-    }
-  `;
+    const vertexShader1 = createShader(this.gl, this.gl.VERTEX_SHADER, vs1);
 
-    const fsGLSL: string = `
-    precision mediump float;
+    const fragmentShader1 = createShader(this.gl, this.gl.FRAGMENT_SHADER, fs1);
 
-    varying float v_density;
+    const program1 = createProgram(this.gl, vertexShader1, fragmentShader1);
 
-    void main() {
-      gl_FragColor = vec4(v_density * 1.0, v_density * 0.0, v_density * 1.0, 1);
-    }
-  `;
+    const vertexShader2 = createShader(this.gl, this.gl.VERTEX_SHADER, vs2);
 
-    const vertexShader = createShader(this.gl, this.gl.VERTEX_SHADER, vsGLSL);
+    const fragmentShader2 = createShader(this.gl, this.gl.FRAGMENT_SHADER, fs2);
 
-    const fragmentShader = createShader(
-      this.gl,
-      this.gl.FRAGMENT_SHADER,
-      fsGLSL
+    const program2 = createProgram(this.gl, vertexShader2, fragmentShader2);
+
+    const positionAttributeLocation = this.gl.getAttribLocation(
+      program1,
+      "a_position"
     );
 
-    const program = createProgram(this.gl, vertexShader, fragmentShader);
+    const densityAttributeLocation = this.gl.getAttribLocation(
+      program1,
+      "a_density"
+    );
 
-    this.webglData.locations.positionAttributeLocation =
-      this.gl.getAttribLocation(program, "a_position");
+    const posAttributeLocation = this.gl.getAttribLocation(program2, "a_pos");
 
-    this.webglData.locations.densityAttributeLocation =
-      this.gl.getAttribLocation(program, "a_density");
+    const texAttributeLocation = this.gl.getAttribLocation(
+      program2,
+      "a_texCoord"
+    );
 
     const transformationMatrixLocation = this.gl.getUniformLocation(
-      program,
+      program1,
       "u_matrix"
     );
 
-    this.webglData.buffers.positionBuffer = this.gl.createBuffer();
+    const canvasResolution = this.gl.getUniformLocation(
+      program2,
+      "u_canvasResolution"
+    );
 
-    this.webglData.buffers.densityBuffer = this.gl.createBuffer();
+    const imageResolution = this.gl.getUniformLocation(
+      program2,
+      "u_imageResolution"
+    );
 
-    this.gl.useProgram(program);
+    const positionBuffer = this.gl.createBuffer();
+
+    const densityBuffer = this.gl.createBuffer();
+
+    const posBuffer = this.gl.createBuffer();
+
+    const texCoordBuffer = this.gl.createBuffer();
+
+    const texture = this.gl.createTexture();
+
+    this.gl.useProgram(program1);
+
+    const n = this.fluid.get_n();
 
     this.gl.uniformMatrix3fv(
       transformationMatrixLocation,
       false,
-      m3.projection(this.gl.canvas.width, this.gl.canvas.width)
+      m3.projection(n, n)
     );
 
+    this.gl.useProgram(program2);
+
+    this.gl.uniform2f(
+      canvasResolution,
+      this.gl.canvas.width,
+      this.gl.canvas.height
+    );
+
+    this.gl.uniform2f(imageResolution, n, n);
+
     this.populateVertices();
+
+    return {
+      locations: {
+        positionAttributeLocation,
+        densityAttributeLocation,
+        posAttributeLocation,
+        texAttributeLocation,
+      },
+      buffers: {
+        positionBuffer,
+        densityBuffer,
+        posBuffer,
+        texCoordBuffer,
+      },
+      textureData: {
+        texture: texture,
+      },
+      programs: {
+        program1,
+        program2,
+      },
+    };
   };
 
-  private populateVertices = () => {
-    let pointIndex = 0;
-    let n = this.fluid.get_n();
-    const halfSquare = this.gl.canvas.width / (n + 2) / 2;
-    for (let i = 0; i < n + 2; i++) {
-      for (let j = 0; j < n + 2; j++) {
-        const center = [
-          halfSquare * 2 * j + halfSquare,
-          halfSquare * 2 * i + halfSquare,
-        ];
-
-        // Vertex 1 coords
-        this.vertices[pointIndex] = center[0] - halfSquare;
-        this.vertices[pointIndex + 1] = center[1] - halfSquare;
-
-        // Vertex 2 coords
-        this.vertices[pointIndex + 2] = center[0] + halfSquare;
-        this.vertices[pointIndex + 3] = center[1] - halfSquare;
-
-        // Vertex 3 coords
-        this.vertices[pointIndex + 4] = center[0] - halfSquare;
-        this.vertices[pointIndex + 5] = center[1] + halfSquare;
-
-        // Vertex 4 coords
-        this.vertices[pointIndex + 6] = center[0] - halfSquare;
-        this.vertices[pointIndex + 7] = center[1] + halfSquare;
-
-        // Vertex 5 coords
-        this.vertices[pointIndex + 8] = center[0] + halfSquare;
-        this.vertices[pointIndex + 9] = center[1] - halfSquare;
-
-        // Vertex 6 coords
-        this.vertices[pointIndex + 10] = center[0] + halfSquare;
-        this.vertices[pointIndex + 11] = center[1] + halfSquare;
-
-        pointIndex += 12;
-      }
-    }
-  };
-
-  private render = () => {
-    this.fluid.simulate();
+  private rdenerToTexture = (): WebGLTexture => {
+    const { gl } = this;
     let n = this.fluid.get_n();
     let size = this.fluid.get_size();
-    for (let i = 1; i <= n; i++) {
-      for (let j = 1; j <= n; j++) {
-        const index = this.fluid.ix(i, j);
-        for (let i = index * 6; i < index * 6 + 6; i++) {
-          this.densityPerVertex[i] = this.fluid.get_density_at_index(index);
-        }
-      }
-    }
+
+    // Texture and frame buffer code
+    const targetTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, targetTexture);
+
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      n,
+      n,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      null
+    );
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    const fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+
+    const attachmentPoint = gl.COLOR_ATTACHMENT0;
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      attachmentPoint,
+      gl.TEXTURE_2D,
+      targetTexture,
+      0
+    );
+
+    // Render code
+    gl.useProgram(this.webglData.programs.program1);
+
     this.gl.bindBuffer(
       this.gl.ARRAY_BUFFER,
       this.webglData.buffers.positionBuffer
@@ -429,6 +432,7 @@ export default class Renderer {
     this.gl.enableVertexAttribArray(
       this.webglData.locations.densityAttributeLocation
     );
+
     this.gl.vertexAttribPointer(
       this.webglData.locations.densityAttributeLocation,
       1,
@@ -438,7 +442,120 @@ export default class Renderer {
       0
     );
 
+    this.gl.viewport(0, 0, n, n);
+    this.gl.clearColor(0, 0, 0, 0);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6 * size);
+
+    return targetTexture;
+  };
+
+  private renderToCanvas = (targetTexture: WebGLTexture) => {
+    let n = this.fluid.get_n();
+
+    this.gl.useProgram(this.webglData.programs.program2);
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.webglData.buffers.posBuffer);
+
+    setRectangle(this.gl, 0, 0, this.gl.canvas.width, this.gl.canvas.height);
+
+    this.gl.bindBuffer(
+      this.gl.ARRAY_BUFFER,
+      this.webglData.buffers.texCoordBuffer
+    );
+
+    setRectangle(this.gl, 0, 0, n, n);
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.webglData.buffers.posBuffer);
+    this.gl.enableVertexAttribArray(
+      this.webglData.locations.posAttributeLocation
+    );
+    this.gl.vertexAttribPointer(
+      this.webglData.locations.posAttributeLocation,
+      2,
+      this.gl.FLOAT,
+      false,
+      0,
+      0
+    );
+
+    this.gl.bindBuffer(
+      this.gl.ARRAY_BUFFER,
+      this.webglData.buffers.texCoordBuffer
+    );
+    this.gl.enableVertexAttribArray(
+      this.webglData.locations.texAttributeLocation
+    );
+    this.gl.vertexAttribPointer(
+      this.webglData.locations.texAttributeLocation,
+      2,
+      this.gl.FLOAT,
+      false,
+      0,
+      0
+    );
+
+    this.gl.bindTexture(this.gl.TEXTURE_2D, targetTexture);
+
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+    this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+  };
+
+  private populateVertices = () => {
+    let pointIndex = 0;
+    let n = this.fluid.get_n();
+    const halfSquare = n / (n + 2) / 2;
+    for (let i = 0; i < n + 2; i++) {
+      for (let j = 0; j < n + 2; j++) {
+        const center = [
+          halfSquare * 2 * j + halfSquare,
+          halfSquare * 2 * i + halfSquare,
+        ];
+
+        // Vertex 1 coords
+        this.vertices[pointIndex] = center[0] - halfSquare;
+        this.vertices[pointIndex + 1] = center[1] - halfSquare;
+
+        // Vertex 2 coords
+        this.vertices[pointIndex + 2] = center[0] + halfSquare;
+        this.vertices[pointIndex + 3] = center[1] - halfSquare;
+
+        // Vertex 3 coords
+        this.vertices[pointIndex + 4] = center[0] - halfSquare;
+        this.vertices[pointIndex + 5] = center[1] + halfSquare;
+
+        // Vertex 4 coords
+        this.vertices[pointIndex + 6] = center[0] - halfSquare;
+        this.vertices[pointIndex + 7] = center[1] + halfSquare;
+
+        // Vertex 5 coords
+        this.vertices[pointIndex + 8] = center[0] + halfSquare;
+        this.vertices[pointIndex + 9] = center[1] - halfSquare;
+
+        // Vertex 6 coords
+        this.vertices[pointIndex + 10] = center[0] + halfSquare;
+        this.vertices[pointIndex + 11] = center[1] + halfSquare;
+
+        pointIndex += 12;
+      }
+    }
+  };
+
+  private render = () => {
+    this.fluid.simulate();
+    let n = this.fluid.get_n();
+    for (let i = 1; i <= n; i++) {
+      for (let j = 1; j <= n; j++) {
+        const index = this.fluid.ix(i, j);
+        for (let i = index * 6; i < index * 6 + 6; i++) {
+          this.densityPerVertex[i] = this.fluid.get_density_at_index(index);
+        }
+      }
+    }
+    const tex = this.rdenerToTexture();
+    this.renderToCanvas(tex);
   };
   private draw = () => {
     this.render();
