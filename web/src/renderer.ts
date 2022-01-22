@@ -5,13 +5,11 @@ import { vs1, vs2, fs1, fs2 } from "./shaders";
 import {
   createProgram,
   createShader,
-  m3,
   resizeCanvasToDisplaySize,
   getEventLocation,
   getMultipliers,
   getClientValues,
   setRectangle,
-  renderToATexture,
 } from "./utils";
 
 export default class Renderer {
@@ -44,7 +42,6 @@ export default class Renderer {
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl");
     resizeCanvasToDisplaySize(this.gl.canvas);
-    // this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
 
     this.fluid = Fluid.new(fluidConfig, dt);
     this.vertices = new Float32Array(this.fluid.get_size() * 12);
@@ -279,9 +276,9 @@ export default class Renderer {
       "a_texCoord"
     );
 
-    const transformationMatrixLocation = this.gl.getUniformLocation(
+    const resolutionUniformLocation = this.gl.getUniformLocation(
       program1,
-      "u_matrix"
+      "u_resolution"
     );
 
     const canvasResolution = this.gl.getUniformLocation(
@@ -308,11 +305,7 @@ export default class Renderer {
 
     const n = this.fluid.get_n();
 
-    this.gl.uniformMatrix3fv(
-      transformationMatrixLocation,
-      false,
-      m3.projection(n, n)
-    );
+    this.gl.uniform2f(resolutionUniformLocation, n, n);
 
     this.gl.useProgram(program2);
 
@@ -563,9 +556,6 @@ export default class Renderer {
   };
 
   start = () => {
-    // setInterval(() => {
-    // // Add any debug logs
-    // }, 4000);
     requestAnimationFrame(this.draw);
   };
 }

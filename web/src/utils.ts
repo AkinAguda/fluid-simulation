@@ -91,64 +91,8 @@ export const resizeCanvasToDisplaySize = (canvas: HTMLCanvasElement) => {
   return needResize;
 };
 
-// Matrix Functions
-export const m3 = {
-  projection: function (width: number, height: number) {
-    //TODO: Need to update projection matrix
-    return [2 / width, 0, 0, 0, -2 / height, 0, -1, 1, 1];
-  },
-
-  multiply: (a: number[], b: number[]) => {
-    const a00 = a[0 * 3 + 0];
-    const a01 = a[0 * 3 + 1];
-    const a02 = a[0 * 3 + 2];
-    const a10 = a[1 * 3 + 0];
-    const a11 = a[1 * 3 + 1];
-    const a12 = a[1 * 3 + 2];
-    const a20 = a[2 * 3 + 0];
-    const a21 = a[2 * 3 + 1];
-    const a22 = a[2 * 3 + 2];
-    const b00 = b[0 * 3 + 0];
-    const b01 = b[0 * 3 + 1];
-    const b02 = b[0 * 3 + 2];
-    const b10 = b[1 * 3 + 0];
-    const b11 = b[1 * 3 + 1];
-    const b12 = b[1 * 3 + 2];
-    const b20 = b[2 * 3 + 0];
-    const b21 = b[2 * 3 + 1];
-    const b22 = b[2 * 3 + 2];
-    return [
-      b00 * a00 + b01 * a10 + b02 * a20,
-      b00 * a01 + b01 * a11 + b02 * a21,
-      b00 * a02 + b01 * a12 + b02 * a22,
-      b10 * a00 + b11 * a10 + b12 * a20,
-      b10 * a01 + b11 * a11 + b12 * a21,
-      b10 * a02 + b11 * a12 + b12 * a22,
-      b20 * a00 + b21 * a10 + b22 * a20,
-      b20 * a01 + b21 * a11 + b22 * a21,
-      b20 * a02 + b21 * a12 + b22 * a22,
-    ];
-  },
-};
-
-export const gaussSeidel1 = (
-  functions: ((...args: number[]) => number)[],
-  initialValues: number[],
-  iter: number
-): number[] => {
-  const initialValuesClone = [...initialValues];
-  for (let i = 0; i < iter; i++) {
-    initialValues.forEach((_, index) => {
-      initialValuesClone[index] = functions[index](...initialValuesClone);
-    });
-  }
-  return initialValuesClone;
-};
-
 export const round = (number: number, precision: number) =>
   Math.round((number + Number.EPSILON) * precision) / precision;
-
-export const lerp = (a: number, b: number, k: number) => a + k * (b - a);
 
 export const getMultipliers = (
   x1: number,
@@ -192,50 +136,4 @@ export const setRectangle = (
     new Float32Array([x1, y1, x2, y1, x1, y2, x1, y2, x2, y1, x2, y2]),
     gl.STATIC_DRAW
   );
-};
-
-export const renderToATexture = (
-  gl: WebGLRenderingContext,
-  targetTexture: WebGLTexture,
-  width: number,
-  height: number
-): [WebGLTexture, WebGLFramebuffer] => {
-  gl.bindTexture(gl.TEXTURE_2D, targetTexture);
-  const level = 0;
-  const internalFormat = gl.RGBA;
-  const border = 0;
-  const format = gl.RGBA;
-  const type = gl.UNSIGNED_BYTE;
-  const data: ArrayBufferView = null;
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    level,
-    internalFormat,
-    width,
-    height,
-    border,
-    format,
-    type,
-    data
-  );
-
-  // set the filtering so we don't need mips
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-  const fb = gl.createFramebuffer();
-  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-
-  // attach the texture as the first color attachment
-  const attachmentPoint = gl.COLOR_ATTACHMENT0;
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    attachmentPoint,
-    gl.TEXTURE_2D,
-    targetTexture,
-    level
-  );
-
-  return [targetTexture, fb];
 };

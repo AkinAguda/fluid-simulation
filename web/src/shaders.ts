@@ -1,15 +1,27 @@
+const convertToClipSpace = `
+vec2 convertToClipSpace(vec2 position, vec2 resolution) {
+
+    vec2 zeroToOne = position / resolution;
+    
+    vec2 zeroToTwo = zeroToOne * 2.0;
+    
+    vec2 clipSpace = vec2(zeroToTwo.x - 1.0, 1.0 - zeroToTwo.y);
+    
+    return clipSpace;
+  }`;
+
 export const vs1: string = `
 attribute vec2 a_position;
 attribute float a_density;
 
-// This matrix is only responsible for converting my pixel coords to clipspace
-uniform mat3 u_matrix;
+uniform vec2 u_resolution;
 
 varying float v_density;
 
+${convertToClipSpace}
+
 void main() {
-    vec2 position = (u_matrix * vec3(a_position, 1)).xy;
-    gl_Position = vec4(position, 0, 1);
+    gl_Position = vec4(convertToClipSpace(a_position, u_resolution), 0, 1);
     v_density = a_density;
 }
 `;
@@ -33,17 +45,7 @@ uniform vec2 u_imageResolution;
 
 varying vec2 v_texCoord;
 
-
-vec2 convertToClipSpace(vec2 position, vec2 resolution) {
-
-  vec2 zeroToOne = position / resolution;
-  
-  vec2 zeroToTwo = zeroToOne * 2.0;
-  
-  vec2 clipSpace = vec2(zeroToTwo.x - 1.0, 1.0 - zeroToTwo.y);
-  
-  return clipSpace;
-}
+${convertToClipSpace}
 
 vec2 convertToTextureClipSpace(vec2 position, vec2 resolution) {
 
