@@ -506,7 +506,7 @@ export default class Renderer {
   private populateVertices = () => {
     let pointIndex = 0;
     let n = this.fluid.get_n();
-    const halfSquare = n / (n + 2) / 2;
+    const halfSquare = 0.5;
     for (let i = 0; i < n + 2; i++) {
       for (let j = 0; j < n + 2; j++) {
         const center = [
