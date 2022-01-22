@@ -31,8 +31,8 @@
 }
 
 #canvas {
-  height: 500px;
-  width: 500px;
+  height: 100vh;
+  width: 100vw;
   max-width: 100%;
   border: 1px solid var(--accent);
   border-radius: 4px;
@@ -82,6 +82,13 @@
   box-sizing: border-box;
   background-color: var(--dark);
   overflow-y: auto;
+}
+
+@media (min-width: 2080px) {
+  #config-dropdown {
+    max-width: 15vw;
+    width: 100vw;
+  }
 }
 
 #config-dropdown > li {
@@ -149,7 +156,7 @@ body {
 
 .title {
   color: var(--pale-light);
-  font-size: 10px;
+  font-size: 16px;
   font-family: sans-serif;
   letter-spacing: 1px;
 }
@@ -201,13 +208,13 @@ body {
 }
 
 .value-box {
-  width: 40px;
+  width: 50px;
   height: 30px;
   border: none;
   background-color: transparent;
   color: var(--pale-light);
   border-bottom: 2px solid var(--accent1);
-  font-size: 10px;
+  font-size: 16px;
   font-weight: bold;
   padding: 0;
   margin-top: 5px;
@@ -231,6 +238,9 @@ body {
   font-family: sans-serif;
   text-align: center;
   margin-top: 50px;
+  position: fixed;
+  top: 30px;
+  z-index: 2;
 }
 
 .intro > h1 {
