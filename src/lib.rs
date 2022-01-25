@@ -36,14 +36,15 @@ extern "C" {
 
 #[wasm_bindgen]
 pub struct FluidConfig {
-    n: u16,
+    nw: u16,
+    nh: u16,
     diffusion: f32,
 }
 
 #[wasm_bindgen]
 impl FluidConfig {
-    pub fn new(n: u16, diffusion: f32) -> FluidConfig {
-        FluidConfig { n, diffusion }
+    pub fn new(nw: u16, nh: u16, diffusion: f32) -> FluidConfig {
+        FluidConfig { nw, nh, diffusion }
     }
 
     pub fn set_diffusion(&mut self, diffusion: f32) {
@@ -78,7 +79,7 @@ pub struct Fluid {
 impl Fluid {
     pub fn new(config: FluidConfig, dt: f32) -> Fluid {
         set_panic_hook();
-        let size = (config.n + 2) * (config.n + 2);
+        let size = (config.nw + 2) * (config.nh + 2);
         let vector_size = size.into();
         Fluid {
             config,
@@ -108,7 +109,8 @@ impl Fluid {
         );
 
         diffuse!(
-            self.config.n,
+            self.config.nw,
+            self.config.nh,
             0,
             self.density,
             self.initial_density,
@@ -119,7 +121,8 @@ impl Fluid {
         std::mem::swap(&mut self.density, &mut self.initial_density);
 
         advect!(
-            self.config.n,
+            self.config.nw,
+            self.config.nh,
             0,
             self.density,
             self.initial_density,
@@ -147,7 +150,8 @@ impl Fluid {
         );
 
         diffuse!(
-            self.config.n,
+            self.config.nw,
+            self.config.nh,
             1,
             self.velocity_x,
             self.initial_velocity_x,
@@ -158,7 +162,8 @@ impl Fluid {
         std::mem::swap(&mut self.velocity_x, &mut self.initial_velocity_x);
 
         diffuse!(
-            self.config.n,
+            self.config.nw,
+            self.config.nh,
             2,
             self.velocity_y,
             self.initial_velocity_y,
@@ -169,7 +174,8 @@ impl Fluid {
         std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
 
         project!(
-            self.config.n,
+            self.config.nw,
+            self.config.nh,
             self.velocity_x,
             self.velocity_y,
             self.poisson_values,
@@ -180,7 +186,8 @@ impl Fluid {
         std::mem::swap(&mut self.velocity_y, &mut self.initial_velocity_y);
 
         advect!(
-            self.config.n,
+            self.config.nw,
+            self.config.nh,
             1,
             self.velocity_x,
             self.initial_velocity_x,
@@ -190,7 +197,8 @@ impl Fluid {
         );
 
         advect!(
-            self.config.n,
+            self.config.nw,
+            self.config.nh,
             2,
             self.velocity_y,
             self.initial_velocity_y,
@@ -200,7 +208,8 @@ impl Fluid {
         );
 
         project!(
-            self.config.n,
+            self.config.nw,
+            self.config.nh,
             self.velocity_x,
             self.velocity_y,
             self.poisson_values,
@@ -227,14 +236,6 @@ impl Fluid {
         self.divergence_values = self.empty_property.clone();
     }
 
-    pub fn ix(&self, x: u16, y: u16) -> u16 {
-        let mut new_x = cmp::min(x, self.config.n + 1);
-        new_x = cmp::max(0, new_x);
-        let mut new_y = cmp::min(y, self.config.n + 1);
-        new_y = cmp::max(0, new_y);
-        new_x + (self.config.n + 2) * new_y
-    }
-
     pub fn add_density(&mut self, index: usize, value: f32) {
         self.density_source[index] = value;
     }
@@ -253,8 +254,16 @@ impl Fluid {
         self.density[index]
     }
 
-    pub fn get_n(&self) -> u16 {
-        self.config.n
+    pub fn ix(&self, x: u16, y: u16) -> u16 {
+        pure_ix_fn(x, y, self.config.nw, self.config.nh) as u16
+    }
+
+    pub fn get_nw(&self) -> u16 {
+        self.config.nw
+    }
+
+    pub fn get_nh(&self) -> u16 {
+        self.config.nh
     }
 
     pub fn get_size(&self) -> u16 {

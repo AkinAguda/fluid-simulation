@@ -15,15 +15,16 @@ export const getClientValues = (event: MouseEvent | TouchEvent) => {
 };
 
 export const getEventLocation = (
-  n: number,
+  nw: number,
+  nh: number,
   rect: DOMRect,
   clientX: number,
   clientY: number
 ): [number, number] => {
   const x = clientX - rect.left; //x position within the element.
   const y = clientY - rect.top; //y position within the element.
-  const hRatio = n / rect.height;
-  const wRatio = n / rect.width;
+  const hRatio = nh / rect.height;
+  const wRatio = nw / rect.width;
   const convertedX = Math.round(x * wRatio);
   const convertedY = Math.round(y * hRatio);
   return [convertedX, convertedY];

@@ -24,6 +24,7 @@ export default class Renderer {
   private vertices: Float32Array;
   private fluid: Fluid;
   private densityPerVertex: Float32Array;
+  private aspectRatio = 0;
   private defaultMouseEventState = {
     mouseDown: false,
     dragging: false,
@@ -42,6 +43,7 @@ export default class Renderer {
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl");
     resizeCanvasToDisplaySize(this.gl.canvas);
+    this.aspectRatio = this.gl.canvas.width / this.canvas.height;
 
     this.fluid = Fluid.new(fluidConfig, dt);
     this.vertices = new Float32Array(this.fluid.get_size() * 12);
@@ -172,7 +174,9 @@ export default class Renderer {
   };
 
   addEventHandlers = () => {
-    const n = this.fluid.get_n();
+    let nw = this.fluid.get_nw();
+    let nh = this.fluid.get_nh();
+
     this.canvas.addEventListener("mousedown", (e) => {
       this.mouseEventState = { ...this.mouseEventState, mouseDown: true };
     });
@@ -183,7 +187,8 @@ export default class Renderer {
         const [clientX, clientY] = getClientValues(e);
         this.handleEvent(
           ...getEventLocation(
-            n,
+            nw,
+            nh,
             (e.target as HTMLCanvasElement).getBoundingClientRect(),
             clientX,
             clientY
@@ -200,7 +205,8 @@ export default class Renderer {
         const [clientX, clientY] = getClientValues(e);
         this.handleEvent(
           ...getEventLocation(
-            n,
+            nw,
+            nh,
             (e.target as HTMLCanvasElement).getBoundingClientRect(),
             clientX,
             clientY
@@ -215,7 +221,8 @@ export default class Renderer {
       const [clientX, clientY] = getClientValues(e);
       this.handleEvent(
         ...getEventLocation(
-          n,
+          nw,
+          nh,
           (e.target as HTMLCanvasElement).getBoundingClientRect(),
           clientX,
           clientY
@@ -303,9 +310,12 @@ export default class Renderer {
 
     this.gl.useProgram(program1);
 
-    const n = this.fluid.get_n();
+    let nw = this.fluid.get_nw();
+    let nh = this.fluid.get_nh();
 
-    this.gl.uniform2f(resolutionUniformLocation, n, n);
+    this.gl.uniform2f(resolutionUniformLocation, nw, nh);
+
+    console.log(this.canvas.width / this.canvas.height);
 
     this.gl.useProgram(program2);
 
@@ -315,7 +325,7 @@ export default class Renderer {
       this.gl.canvas.height
     );
 
-    this.gl.uniform2f(imageResolution, n, n);
+    this.gl.uniform2f(imageResolution, nw, nh);
 
     this.populateVertices();
 
@@ -344,7 +354,8 @@ export default class Renderer {
 
   private rdenerToTexture = (): WebGLTexture => {
     const { gl } = this;
-    let n = this.fluid.get_n();
+    let nw = this.fluid.get_nw();
+    let nh = this.fluid.get_nh();
     let size = this.fluid.get_size();
 
     // Texture and frame buffer code
@@ -355,8 +366,8 @@ export default class Renderer {
       gl.TEXTURE_2D,
       0,
       gl.RGBA,
-      n,
-      n,
+      nw,
+      nh,
       0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
@@ -435,7 +446,7 @@ export default class Renderer {
       0
     );
 
-    this.gl.viewport(0, 0, n, n);
+    this.gl.viewport(0, 0, nw, nh);
     this.gl.clearColor(0, 0, 0, 0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
@@ -445,7 +456,8 @@ export default class Renderer {
   };
 
   private renderToCanvas = (targetTexture: WebGLTexture) => {
-    let n = this.fluid.get_n();
+    let nw = this.fluid.get_nw();
+    let nh = this.fluid.get_nh();
 
     this.gl.useProgram(this.webglData.programs.program2);
 
@@ -458,7 +470,7 @@ export default class Renderer {
       this.webglData.buffers.texCoordBuffer
     );
 
-    setRectangle(this.gl, 0, 0, n, n);
+    setRectangle(this.gl, 0, 0, nw, nh);
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.webglData.buffers.posBuffer);
     this.gl.enableVertexAttribArray(
@@ -497,11 +509,12 @@ export default class Renderer {
   };
 
   private populateVertices = () => {
+    let nw = this.fluid.get_nw();
+    let nh = this.fluid.get_nh();
     let pointIndex = 0;
-    let n = this.fluid.get_n();
     const halfSquare = 0.5;
-    for (let i = 0; i < n + 2; i++) {
-      for (let j = 0; j < n + 2; j++) {
+    for (let i = 0; i < nh + 2; i++) {
+      for (let j = 0; j < nw + 2; j++) {
         const center = [
           halfSquare * 2 * j + halfSquare,
           halfSquare * 2 * i + halfSquare,
@@ -538,9 +551,10 @@ export default class Renderer {
 
   private render = () => {
     this.fluid.simulate();
-    let n = this.fluid.get_n();
-    for (let i = 1; i <= n; i++) {
-      for (let j = 1; j <= n; j++) {
+    let nw = this.fluid.get_nw();
+    let nh = this.fluid.get_nh();
+    for (let i = 1; i <= nh; i++) {
+      for (let j = 1; j <= nw; j++) {
         const index = this.fluid.ix(i, j);
         for (let i = index * 6; i < index * 6 + 6; i++) {
           this.densityPerVertex[i] = this.fluid.get_density_at_index(index);
