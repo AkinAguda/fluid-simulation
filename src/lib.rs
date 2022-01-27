@@ -3,7 +3,7 @@ mod utils;
 
 use constants::GAUSS_SEIDEL_ITERATIONS;
 use std::cmp;
-use utils::{lerp, pure_ix_fn, set_panic_hook, PropertyType};
+use utils::{lerp, pure_ix_fn, set_panic_hook, BoundaryType, PropertyType};
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -111,7 +111,7 @@ impl Fluid {
         diffuse!(
             self.config.nw,
             self.config.nh,
-            0,
+            BoundaryType::NONE,
             self.density,
             self.initial_density,
             self.config.diffusion,
@@ -123,7 +123,7 @@ impl Fluid {
         advect!(
             self.config.nw,
             self.config.nh,
-            0,
+            BoundaryType::NONE,
             self.density,
             self.initial_density,
             self.velocity_x,
@@ -152,7 +152,7 @@ impl Fluid {
         diffuse!(
             self.config.nw,
             self.config.nh,
-            1,
+            BoundaryType::VERTICAL,
             self.velocity_x,
             self.initial_velocity_x,
             self.config.diffusion,
@@ -164,7 +164,7 @@ impl Fluid {
         diffuse!(
             self.config.nw,
             self.config.nh,
-            2,
+            BoundaryType::HORIZONTAL,
             self.velocity_y,
             self.initial_velocity_y,
             self.config.diffusion,
@@ -188,7 +188,7 @@ impl Fluid {
         advect!(
             self.config.nw,
             self.config.nh,
-            1,
+            BoundaryType::VERTICAL,
             self.velocity_x,
             self.initial_velocity_x,
             self.velocity_x,
@@ -199,7 +199,7 @@ impl Fluid {
         advect!(
             self.config.nw,
             self.config.nh,
-            2,
+            BoundaryType::HORIZONTAL,
             self.velocity_y,
             self.initial_velocity_y,
             self.velocity_x,

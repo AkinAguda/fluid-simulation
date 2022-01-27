@@ -11,6 +11,13 @@ pub fn set_panic_hook() {
     console_error_panic_hook::set_once();
 }
 
+// ENUMS
+pub enum BoundaryType {
+    VERTICAL,
+    HORIZONTAL,
+    NONE,
+}
+
 // TYPES
 
 // This is the type of a fluid property
@@ -42,40 +49,132 @@ macro_rules! add_source {
 #[macro_export]
 macro_rules! set_bnd {
     ($nw:expr, $nh:expr, $b:expr, $property:expr) => {
-        for i in 1..($nw + 1) {
-            $property[pure_ix_fn(0, i, $nw, $nh)] = if ($b == 1) {
+    //     for i in 1..($nw + 1) {
+    //         $property[pure_ix_fn(0, i, $nw, $nh)] = if ($b == 1) {
+    //             -$property[pure_ix_fn(1, i, $nw, $nh)]
+    //         } else {
+    //             $property[pure_ix_fn(1, i, $nw, $nh)]
+    //         };
+    //         $property[pure_ix_fn($n + 1, i, $nw, $nh)] = if ($b == 1) {
+    //             -$property[pure_ix_fn($n, i, $nw, $nh)]
+    //         } else {
+    //             $property[pure_ix_fn($n, i, $nw, $nh)]
+    //         };
+    //         $property[pure_ix_fn(i, 0, $nw, $nh)] = if ($b == 2) {
+    //             -$property[pure_ix_fn(i, 1, $nw, $nh)]
+    //         } else {
+    //             $property[pure_ix_fn(i, 1, $nw, $nh)]
+    //         };
+    //         $property[pure_ix_fn(i, $n + 1, $nw, $nh)] = if ($b == 2) {
+    //             -$property[pure_ix_fn(i, $n, $nw, $nh)]
+    //         } else {
+    //             $property[pure_ix_fn(i, $n, $nw, $nh)]
+    //         };
+    //     }
+    //     $property[pure_ix_fn(0, 0, $nw, $nh)] =
+    //         0.5 * ($property[pure_ix_fn(1, 0, $nw, $nh)] + $property[pure_ix_fn(0, 1, $nw, $nh)]);
+    //     $property[pure_ix_fn(0, $n + 1, $nw, $nh)] = 0.5
+    //         * ($property[pure_ix_fn(1, $n + 1, $nw, $nh)]
+    //             + $property[pure_ix_fn(0, $n + 1, $nw, $nh)]);
+    //     $property[pure_ix_fn($n + 1, 0, $nw, $nh)] = 0.5
+    //         * ($property[pure_ix_fn($n + 1, 0, $nw, $nh)]
+    //             + $property[pure_ix_fn($n + 1, 1, $nw, $nh)]);
+    //     $property[pure_ix_fn($n + 1, $n + 1, $nw, $nh)] = 0.5
+    //         * ($property[pure_ix_fn($n, $n + 1, $nw, $nh)]
+    //             + $property[pure_ix_fn($n + 1, $n, $nw, $nh)]);
+    // };
+
+    let max = cmp::max($nw, $nh);
+    for i in 1..(max + 1) {
+        $property[pure_ix_fn(0, i, $nw, $nh)] = match $b {
+            BoundaryType::VERTICAL => {
                 -$property[pure_ix_fn(1, i, $nw, $nh)]
-            } else {
+            },
+            _ => {
                 $property[pure_ix_fn(1, i, $nw, $nh)]
-            };
-            $property[pure_ix_fn($n + 1, i, $nw, $nh)] = if ($b == 1) {
-                -$property[pure_ix_fn($n, i, $nw, $nh)]
-            } else {
-                $property[pure_ix_fn($n, i, $nw, $nh)]
-            };
-            $property[pure_ix_fn(i, 0, $nw, $nh)] = if ($b == 2) {
+            }
+        };
+
+        $property[pure_ix_fn($nw + 1, i, $nw, $nh)] = match $b {
+            BoundaryType::VERTICAL => {
+                -$property[pure_ix_fn($nw, i, $nw, $nh)]
+            },
+            _ => {
+                $property[pure_ix_fn($nw, i, $nw, $nh)]
+            }
+        };
+
+        $property[pure_ix_fn(i, 0, $nw, $nh)] = match $b {
+            BoundaryType::HORIZONTAL => {
                 -$property[pure_ix_fn(i, 1, $nw, $nh)]
-            } else {
+            },
+            _ => {
                 $property[pure_ix_fn(i, 1, $nw, $nh)]
-            };
-            $property[pure_ix_fn(i, $n + 1, $nw, $nh)] = if ($b == 2) {
-                -$property[pure_ix_fn(i, $n, $nw, $nh)]
-            } else {
-                $property[pure_ix_fn(i, $n, $nw, $nh)]
-            };
-        }
-        $property[pure_ix_fn(0, 0, $nw, $nh)] =
-            0.5 * ($property[pure_ix_fn(1, 0, $nw, $nh)] + $property[pure_ix_fn(0, 1, $nw, $nh)]);
-        $property[pure_ix_fn(0, $n + 1, $nw, $nh)] = 0.5
-            * ($property[pure_ix_fn(1, $n + 1, $nw, $nh)]
-                + $property[pure_ix_fn(0, $n + 1, $nw, $nh)]);
-        $property[pure_ix_fn($n + 1, 0, $nw, $nh)] = 0.5
-            * ($property[pure_ix_fn($n + 1, 0, $nw, $nh)]
-                + $property[pure_ix_fn($n + 1, 1, $nw, $nh)]);
-        $property[pure_ix_fn($n + 1, $n + 1, $nw, $nh)] = 0.5
-            * ($property[pure_ix_fn($n, $n + 1, $nw, $nh)]
-                + $property[pure_ix_fn($n + 1, $n, $nw, $nh)]);
+            }
+        };
+
+        $property[pure_ix_fn(i, $nh + 1, $nw, $nh)] = match $b {
+            BoundaryType::HORIZONTAL => {
+                -$property[pure_ix_fn(i, $nh, $nw, $nh)]
+            },
+            _ => {
+                $property[pure_ix_fn(i, $nh, $nw, $nh)]
+            }
+        };
     };
+
+
+
+
+    $property[pure_ix_fn(0, 0, $nw, $nh)] =
+            0.5 * ($property[pure_ix_fn(1, 0, $nw, $nh)] + $property[pure_ix_fn(0, 1, $nw, $nh)]);
+        $property[pure_ix_fn(0, $nw + 1, $nw, $nh)] = 0.5
+            * ($property[pure_ix_fn(1, $nw + 1, $nw, $nh)]
+                + $property[pure_ix_fn(0, $nw + 1, $nw, $nh)]);
+        $property[pure_ix_fn($nh + 1, 0, $nw, $nh)] = 0.5
+            * ($property[pure_ix_fn($nh + 1, 0, $nw, $nh)]
+                + $property[pure_ix_fn($nh + 1, 1, $nw, $nh)]);
+        $property[pure_ix_fn($nh + 1, $nw + 1, $nw, $nh)] = 0.5
+            * ($property[pure_ix_fn($nh, $nw + 1, $nw, $nh)]
+                + $property[pure_ix_fn($nh + 1, $nw, $nw, $nh)]);
+
+
+
+
+
+        // $property[pure_ix_fn(0, i, $nw, $nh)] = if ($b == 1) {
+        //     -$property[pure_ix_fn(1, i, $nw, $nh)]
+        // } else {
+        //     $property[pure_ix_fn(1, i, $nw, $nh)]
+        // };
+        // $property[pure_ix_fn($n + 1, i, $nw, $nh)] = if ($b == 1) {
+        //     -$property[pure_ix_fn($n, i, $nw, $nh)]
+        // } else {
+        //     $property[pure_ix_fn($n, i, $nw, $nh)]
+        // };
+        // $property[pure_ix_fn(i, 0, $nw, $nh)] = if ($b == 2) {
+        //     -$property[pure_ix_fn(i, 1, $nw, $nh)]
+        // } else {
+        //     $property[pure_ix_fn(i, 1, $nw, $nh)]
+        // };
+        // $property[pure_ix_fn(i, $n + 1, $nw, $nh)] = if ($b == 2) {
+        //     -$property[pure_ix_fn(i, $n, $nw, $nh)]
+        // } else {
+        //     $property[pure_ix_fn(i, $n, $nw, $nh)]
+        // };
+    }
+    // $property[pure_ix_fn(0, 0, $nw, $nh)] =
+    //     0.5 * ($property[pure_ix_fn(1, 0, $nw, $nh)] + $property[pure_ix_fn(0, 1, $nw, $nh)]);
+    // $property[pure_ix_fn(0, $n + 1, $nw, $nh)] = 0.5
+    //     * ($property[pure_ix_fn(1, $n + 1, $nw, $nh)]
+    //         + $property[pure_ix_fn(0, $n + 1, $nw, $nh)]);
+    // $property[pure_ix_fn($n + 1, 0, $nw, $nh)] = 0.5
+    //     * ($property[pure_ix_fn($n + 1, 0, $nw, $nh)]
+    //         + $property[pure_ix_fn($n + 1, 1, $nw, $nh)]);
+    // $property[pure_ix_fn($n + 1, $n + 1, $nw, $nh)] = 0.5
+    //     * ($property[pure_ix_fn($n, $n + 1, $nw, $nh)]
+    //         + $property[pure_ix_fn($n + 1, $n, $nw, $nh)]);
+
 }
 
 #[macro_export]
@@ -119,7 +218,7 @@ macro_rules! advect {
             }
         }
 
-        // set_bnd!($n, $b, $property);
+        set_bnd!($nw, $nh, $b, $property);
     };
 }
 
@@ -139,8 +238,8 @@ macro_rules! project {
             }
         }
 
-        // set_bnd!($n, 0, $divergence_values);
-        // set_bnd!($n, 0, $poisson_values);
+        set_bnd!($nw, $nh, BoundaryType::NONE, $divergence_values);
+        set_bnd!($nw, $nh, BoundaryType::NONE, $poisson_values);
 
         for _ in 0..GAUSS_SEIDEL_ITERATIONS {
             for i in 1..$nh + 1 {
@@ -156,7 +255,7 @@ macro_rules! project {
             }
         }
 
-        // set_bnd!($n, 0, $poisson_values);
+        set_bnd!($nw, $nh, BoundaryType::NONE, $poisson_values);
 
         for i in 1..$nh + 1 {
             for j in 1..$nw + 1 {
@@ -169,8 +268,8 @@ macro_rules! project {
                     * 0.5;
             }
         }
-        // set_bnd!($n, 1, $velocity_x);
-        // set_bnd!($n, 2, $velocity_y);
+        set_bnd!($nw, $nh, BoundaryType::VERTICAL, $velocity_x);
+        set_bnd!($nw, $nh, BoundaryType::HORIZONTAL, $velocity_y);
     };
 }
 
@@ -193,7 +292,7 @@ macro_rules! diffuse {
                 }
             }
 
-            // set_bnd!($n, $b, $property);
+            set_bnd!($nw, $nh, $b, $property);
         }
     };
 }

@@ -5,12 +5,13 @@ import { vs1, vs2, fs1, fs2 } from "./shaders";
 import {
   createProgram,
   createShader,
-  resizeCanvasToDisplaySize,
   getEventLocation,
   getMultipliers,
   getClientValues,
   setRectangle,
 } from "./utils";
+
+let dg = 0;
 
 export default class Renderer {
   private canvas: HTMLCanvasElement;
@@ -42,7 +43,6 @@ export default class Renderer {
     const initialDiffusion = fluidConfig.get_diffusion();
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl");
-    resizeCanvasToDisplaySize(this.gl.canvas);
     this.aspectRatio = this.gl.canvas.width / this.canvas.height;
 
     this.fluid = Fluid.new(fluidConfig, dt);
@@ -511,6 +511,7 @@ export default class Renderer {
   private populateVertices = () => {
     let nw = this.fluid.get_nw();
     let nh = this.fluid.get_nh();
+
     let pointIndex = 0;
     const halfSquare = 0.5;
     for (let i = 0; i < nh + 2; i++) {
@@ -553,11 +554,16 @@ export default class Renderer {
     this.fluid.simulate();
     let nw = this.fluid.get_nw();
     let nh = this.fluid.get_nh();
+    if (dg === 0) {
+      console.log(nh, nw);
+      dg++;
+    }
     for (let i = 1; i <= nh; i++) {
       for (let j = 1; j <= nw; j++) {
         const index = this.fluid.ix(i, j);
         for (let i = index * 6; i < index * 6 + 6; i++) {
-          this.densityPerVertex[i] = this.fluid.get_density_at_index(index);
+          // this.densityPerVertex[i] = this.fluid.get_density_at_index(index);
+          this.densityPerVertex[i] = 0.4;
         }
       }
     }
