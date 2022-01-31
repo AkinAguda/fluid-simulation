@@ -1,7 +1,7 @@
 import Renderer from "./renderer";
 import { resizeCanvasToDisplaySize } from "./utils";
 
-const DEFAULT = 128;
+const DEFAULT = 256;
 
 import("fluid")
   .then(({ FluidConfig }) => {
