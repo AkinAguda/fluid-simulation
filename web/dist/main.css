@@ -31,8 +31,8 @@
 }
 
 #canvas {
-  height: 25%;
-  width: 90vw;
+  height: 100%;
+  width: 100%;
   max-width: 100%;
   border: 1px solid var(--accent);
   border-radius: 4px;

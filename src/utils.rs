@@ -51,84 +51,30 @@ macro_rules! add_source {
 #[macro_export]
 macro_rules! set_bnd {
     ($nw:expr, $nh:expr, $b:expr, $property:expr) => {
-    //     for i in 1..($nw + 1) {
-    //         $property[pure_ix_fn(0, i, $nw, $nh)] = if ($b == 1) {
-    //             -$property[pure_ix_fn(1, i, $nw, $nh)]
-    //         } else {
-    //             $property[pure_ix_fn(1, i, $nw, $nh)]
-    //         };
-    //         $property[pure_ix_fn($n + 1, i, $nw, $nh)] = if ($b == 1) {
-    //             -$property[pure_ix_fn($n, i, $nw, $nh)]
-    //         } else {
-    //             $property[pure_ix_fn($n, i, $nw, $nh)]
-    //         };
-    //         $property[pure_ix_fn(i, 0, $nw, $nh)] = if ($b == 2) {
-    //             -$property[pure_ix_fn(i, 1, $nw, $nh)]
-    //         } else {
-    //             $property[pure_ix_fn(i, 1, $nw, $nh)]
-    //         };
-    //         $property[pure_ix_fn(i, $n + 1, $nw, $nh)] = if ($b == 2) {
-    //             -$property[pure_ix_fn(i, $n, $nw, $nh)]
-    //         } else {
-    //             $property[pure_ix_fn(i, $n, $nw, $nh)]
-    //         };
-    //     }
-    //     $property[pure_ix_fn(0, 0, $nw, $nh)] =
-    //         0.5 * ($property[pure_ix_fn(1, 0, $nw, $nh)] + $property[pure_ix_fn(0, 1, $nw, $nh)]);
-    //     $property[pure_ix_fn(0, $n + 1, $nw, $nh)] = 0.5
-    //         * ($property[pure_ix_fn(1, $n + 1, $nw, $nh)]
-    //             + $property[pure_ix_fn(0, $n + 1, $nw, $nh)]);
-    //     $property[pure_ix_fn($n + 1, 0, $nw, $nh)] = 0.5
-    //         * ($property[pure_ix_fn($n + 1, 0, $nw, $nh)]
-    //             + $property[pure_ix_fn($n + 1, 1, $nw, $nh)]);
-    //     $property[pure_ix_fn($n + 1, $n + 1, $nw, $nh)] = 0.5
-    //         * ($property[pure_ix_fn($n, $n + 1, $nw, $nh)]
-    //             + $property[pure_ix_fn($n + 1, $n, $nw, $nh)]);
-    // };
+        let max = cmp::max($nw, $nh);
+        for i in 1..(max + 1) {
+            $property[pure_ix_fn(0, i, $nw, $nh)] = match $b {
+                BoundaryType::VERTICAL => -$property[pure_ix_fn(1, i, $nw, $nh)],
+                _ => $property[pure_ix_fn(1, i, $nw, $nh)],
+            };
 
-    let max = cmp::max($nw, $nh);
-    for i in 1..(max + 1) {
-        $property[pure_ix_fn(0, i, $nw, $nh)] = match $b {
-            BoundaryType::VERTICAL => {
-                -$property[pure_ix_fn(1, i, $nw, $nh)]
-            },
-            _ => {
-                $property[pure_ix_fn(1, i, $nw, $nh)]
-            }
-        };
+            $property[pure_ix_fn($nw + 1, i, $nw, $nh)] = match $b {
+                BoundaryType::VERTICAL => -$property[pure_ix_fn($nw, i, $nw, $nh)],
+                _ => $property[pure_ix_fn($nw, i, $nw, $nh)],
+            };
 
-        $property[pure_ix_fn($nw + 1, i, $nw, $nh)] = match $b {
-            BoundaryType::VERTICAL => {
-                -$property[pure_ix_fn($nw, i, $nw, $nh)]
-            },
-            _ => {
-                $property[pure_ix_fn($nw, i, $nw, $nh)]
-            }
-        };
+            $property[pure_ix_fn(i, 0, $nw, $nh)] = match $b {
+                BoundaryType::HORIZONTAL => -$property[pure_ix_fn(i, 1, $nw, $nh)],
+                _ => $property[pure_ix_fn(i, 1, $nw, $nh)],
+            };
 
-        $property[pure_ix_fn(i, 0, $nw, $nh)] = match $b {
-            BoundaryType::HORIZONTAL => {
-                -$property[pure_ix_fn(i, 1, $nw, $nh)]
-            },
-            _ => {
-                $property[pure_ix_fn(i, 1, $nw, $nh)]
-            }
-        };
+            $property[pure_ix_fn(i, $nh + 1, $nw, $nh)] = match $b {
+                BoundaryType::HORIZONTAL => -$property[pure_ix_fn(i, $nh, $nw, $nh)],
+                _ => $property[pure_ix_fn(i, $nh, $nw, $nh)],
+            };
+        }
 
-        $property[pure_ix_fn(i, $nh + 1, $nw, $nh)] = match $b {
-            BoundaryType::HORIZONTAL => {
-                -$property[pure_ix_fn(i, $nh, $nw, $nh)]
-            },
-            _ => {
-                $property[pure_ix_fn(i, $nh, $nw, $nh)]
-            }
-        };
-    };
-
-
-
-
-    $property[pure_ix_fn(0, 0, $nw, $nh)] =
+        $property[pure_ix_fn(0, 0, $nw, $nh)] =
             0.5 * ($property[pure_ix_fn(1, 0, $nw, $nh)] + $property[pure_ix_fn(0, 1, $nw, $nh)]);
         $property[pure_ix_fn(0, $nw + 1, $nw, $nh)] = 0.5
             * ($property[pure_ix_fn(1, $nw + 1, $nw, $nh)]
@@ -139,51 +85,14 @@ macro_rules! set_bnd {
         $property[pure_ix_fn($nh + 1, $nw + 1, $nw, $nh)] = 0.5
             * ($property[pure_ix_fn($nh, $nw + 1, $nw, $nh)]
                 + $property[pure_ix_fn($nh + 1, $nw, $nw, $nh)]);
-
-
-
-
-
-        // $property[pure_ix_fn(0, i, $nw, $nh)] = if ($b == 1) {
-        //     -$property[pure_ix_fn(1, i, $nw, $nh)]
-        // } else {
-        //     $property[pure_ix_fn(1, i, $nw, $nh)]
-        // };
-        // $property[pure_ix_fn($n + 1, i, $nw, $nh)] = if ($b == 1) {
-        //     -$property[pure_ix_fn($n, i, $nw, $nh)]
-        // } else {
-        //     $property[pure_ix_fn($n, i, $nw, $nh)]
-        // };
-        // $property[pure_ix_fn(i, 0, $nw, $nh)] = if ($b == 2) {
-        //     -$property[pure_ix_fn(i, 1, $nw, $nh)]
-        // } else {
-        //     $property[pure_ix_fn(i, 1, $nw, $nh)]
-        // };
-        // $property[pure_ix_fn(i, $n + 1, $nw, $nh)] = if ($b == 2) {
-        //     -$property[pure_ix_fn(i, $n, $nw, $nh)]
-        // } else {
-        //     $property[pure_ix_fn(i, $n, $nw, $nh)]
-        // };
-    }
-    // $property[pure_ix_fn(0, 0, $nw, $nh)] =
-    //     0.5 * ($property[pure_ix_fn(1, 0, $nw, $nh)] + $property[pure_ix_fn(0, 1, $nw, $nh)]);
-    // $property[pure_ix_fn(0, $n + 1, $nw, $nh)] = 0.5
-    //     * ($property[pure_ix_fn(1, $n + 1, $nw, $nh)]
-    //         + $property[pure_ix_fn(0, $n + 1, $nw, $nh)]);
-    // $property[pure_ix_fn($n + 1, 0, $nw, $nh)] = 0.5
-    //     * ($property[pure_ix_fn($n + 1, 0, $nw, $nh)]
-    //         + $property[pure_ix_fn($n + 1, 1, $nw, $nh)]);
-    // $property[pure_ix_fn($n + 1, $n + 1, $nw, $nh)] = 0.5
-    //     * ($property[pure_ix_fn($n, $n + 1, $nw, $nh)]
-    //         + $property[pure_ix_fn($n + 1, $n, $nw, $nh)]);
-
+    };
 }
 
 #[macro_export]
 macro_rules! advect {
     ($nw:expr, $nh:expr, $b:expr, $property:expr, $prev_property:expr, $velocity_x:expr, $velocity_y:expr, $dt:expr) => {
-        for i in 1..$nh + 1 {
-            for j in 1..$nw + 1 {
+        for j in 1..$nh + 1 {
+            for i in 1..$nw + 1 {
                 let index = pure_ix_fn(i, j, $nw, $nh) as usize;
 
                 let inital_pos_x = i as f32 - $velocity_x[pure_ix_fn(i, j, $nw, $nh)] * $dt;
@@ -227,8 +136,8 @@ macro_rules! advect {
 #[macro_export]
 macro_rules! project {
     ($nw:expr, $nh:expr, $velocity_x:expr, $velocity_y:expr, $poisson_values:expr, $divergence_values:expr) => {
-        for i in 1..$nh + 1 {
-            for j in 1..$nw + 1 {
+        for j in 1..$nh + 1 {
+            for i in 1..$nw + 1 {
                 let index = pure_ix_fn(i, j, $nw, $nh);
                 let a = $velocity_x[pure_ix_fn(i + 1, j, $nw, $nh)]
                     - $velocity_x[pure_ix_fn(i - 1, j, $nw, $nh)];
@@ -244,8 +153,8 @@ macro_rules! project {
         set_bnd!($nw, $nh, BoundaryType::NONE, $poisson_values);
 
         for _ in 0..GAUSS_SEIDEL_ITERATIONS {
-            for i in 1..$nh + 1 {
-                for j in 1..$nw + 1 {
+            for j in 1..$nh + 1 {
+                for i in 1..$nw + 1 {
                     let index = pure_ix_fn(i, j, $nw, $nh);
                     $poisson_values[index] = ($poisson_values[pure_ix_fn(i - 1, j, $nw, $nh)]
                         + $poisson_values[pure_ix_fn(i + 1, j, $nw, $nh)]
@@ -259,8 +168,8 @@ macro_rules! project {
 
         set_bnd!($nw, $nh, BoundaryType::NONE, $poisson_values);
 
-        for i in 1..$nh + 1 {
-            for j in 1..$nw + 1 {
+        for j in 1..$nh + 1 {
+            for i in 1..$nw + 1 {
                 let index = pure_ix_fn(i, j, $nw, $nh);
                 $velocity_x[index] -= ($poisson_values[pure_ix_fn(i + 1, j, $nw, $nh)]
                     - $poisson_values[pure_ix_fn(i - 1, j, $nw, $nh)])
@@ -280,8 +189,8 @@ macro_rules! diffuse {
     ($nw:expr, $nh:expr, $b:expr, $property:expr, $prev_property:expr, $diffusion:expr, $dt:expr) => {
         let k = $dt * $diffusion;
         for _ in 0..GAUSS_SEIDEL_ITERATIONS {
-            for i in 1..$nh + 1 {
-                for j in 1..$nw + 1 {
+            for j in 1..$nh + 1 {
+                for i in 1..$nw + 1 {
                     let index = pure_ix_fn(i, j, $nw, $nh) as usize;
 
                     $property[index] = ($prev_property[index]

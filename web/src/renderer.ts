@@ -523,15 +523,13 @@ export default class Renderer {
     this.fluid.simulate();
     let nw = this.fluid.get_nw();
     let nh = this.fluid.get_nh();
-    let count = 0;
     let densIndex = 0;
 
     for (let i = 1; i <= nh; i++) {
       for (let j = 1; j <= nw; j++) {
         const index = this.fluid.ix(j, i);
         this.densityPerGridSquare[densIndex] =
-          // this.fluid.get_density_at_index(index);
-          this.densityPerGridSquare[densIndex] = 1.0;
+          this.fluid.get_density_at_index(index);
         densIndex++;
       }
     }
