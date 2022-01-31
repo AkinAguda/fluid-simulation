@@ -546,12 +546,3 @@ export default class Renderer {
     requestAnimationFrame(this.draw);
   };
 }
-
-const c = (a: number[], b: number[]) => {
-  const zt1 = [a[0] / b[0], a[1] / b[1]];
-  const ztt = [zt1[0] * 2, zt1[1] * 2];
-  const clp = [ztt[0] - 1.0, 1.0 - ztt[1]];
-  return clp;
-};
-
-console.log(c([128 / 2, 25 / 2], [128, 25]));
