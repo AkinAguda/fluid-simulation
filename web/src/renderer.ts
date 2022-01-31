@@ -24,8 +24,7 @@ export default class Renderer {
   private mode = 0;
   private vertices: Float32Array;
   private fluid: Fluid;
-  private densityPerVertex: Float32Array;
-  private aspectRatio = 0;
+  private densityPerGridSquare: Float32Array;
   private defaultMouseEventState = {
     mouseDown: false,
     dragging: false,
@@ -43,11 +42,12 @@ export default class Renderer {
     const initialDiffusion = fluidConfig.get_diffusion();
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl");
-    this.aspectRatio = this.gl.canvas.width / this.canvas.height;
 
     this.fluid = Fluid.new(fluidConfig, dt);
-    this.vertices = new Float32Array(this.fluid.get_size() * 12);
-    this.densityPerVertex = new Float32Array(this.fluid.get_size() * 6);
+    let nw = this.fluid.get_nw();
+    let nh = this.fluid.get_nh();
+    this.vertices = new Float32Array(nw * nh * 2);
+    this.densityPerGridSquare = new Float32Array(nw * nh);
     this.addEventHandlers();
     this.webglData = this.initializeWebGL();
     new ConfigBox([
@@ -315,8 +315,6 @@ export default class Renderer {
 
     this.gl.uniform2f(resolutionUniformLocation, nw, nh);
 
-    console.log(this.canvas.width / this.canvas.height);
-
     this.gl.useProgram(program2);
 
     this.gl.uniform2f(
@@ -352,15 +350,34 @@ export default class Renderer {
     };
   };
 
+  private populateVertices = () => {
+    let nw = this.fluid.get_nw();
+    let nh = this.fluid.get_nh();
+
+    let pointIndex = 0;
+    const halfSquare = 0.5;
+    for (let i = 1; i <= nh; i++) {
+      for (let j = 1; j <= nw; j++) {
+        this.vertices[pointIndex] = j - halfSquare;
+        this.vertices[pointIndex + 1] = i - halfSquare;
+        pointIndex += 2;
+      }
+    }
+  };
+
   private rdenerToTexture = (): WebGLTexture => {
     const { gl } = this;
     let nw = this.fluid.get_nw();
     let nh = this.fluid.get_nh();
-    let size = this.fluid.get_size();
 
     // Texture and frame buffer code
     const targetTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, targetTexture);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     gl.texImage2D(
       gl.TEXTURE_2D,
@@ -373,10 +390,6 @@ export default class Renderer {
       gl.UNSIGNED_BYTE,
       null
     );
-
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
     const fb = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
@@ -409,7 +422,7 @@ export default class Renderer {
     );
     this.gl.bufferData(
       this.gl.ARRAY_BUFFER,
-      this.densityPerVertex,
+      this.densityPerGridSquare,
       this.gl.STATIC_DRAW
     );
 
@@ -450,12 +463,12 @@ export default class Renderer {
     this.gl.clearColor(0, 0, 0, 0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
-    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6 * size);
+    this.gl.drawArrays(this.gl.POINTS, 0, nw * nh);
 
     return targetTexture;
   };
 
-  private renderToCanvas = (targetTexture: WebGLTexture) => {
+  private renderToCanvas = () => {
     let nw = this.fluid.get_nw();
     let nh = this.fluid.get_nh();
 
@@ -501,74 +514,30 @@ export default class Renderer {
       0
     );
 
-    this.gl.bindTexture(this.gl.TEXTURE_2D, targetTexture);
-
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
-  };
-
-  private populateVertices = () => {
-    let nw = this.fluid.get_nw();
-    let nh = this.fluid.get_nh();
-
-    let pointIndex = 0;
-    const halfSquare = 0.5;
-    for (let i = 0; i < nh + 2; i++) {
-      for (let j = 0; j < nw + 2; j++) {
-        const center = [
-          halfSquare * 2 * j + halfSquare,
-          halfSquare * 2 * i + halfSquare,
-        ];
-
-        // Vertex 1 coords
-        this.vertices[pointIndex] = center[0] - halfSquare;
-        this.vertices[pointIndex + 1] = center[1] - halfSquare;
-
-        // Vertex 2 coords
-        this.vertices[pointIndex + 2] = center[0] + halfSquare;
-        this.vertices[pointIndex + 3] = center[1] - halfSquare;
-
-        // Vertex 3 coords
-        this.vertices[pointIndex + 4] = center[0] - halfSquare;
-        this.vertices[pointIndex + 5] = center[1] + halfSquare;
-
-        // Vertex 4 coords
-        this.vertices[pointIndex + 6] = center[0] - halfSquare;
-        this.vertices[pointIndex + 7] = center[1] + halfSquare;
-
-        // Vertex 5 coords
-        this.vertices[pointIndex + 8] = center[0] + halfSquare;
-        this.vertices[pointIndex + 9] = center[1] - halfSquare;
-
-        // Vertex 6 coords
-        this.vertices[pointIndex + 10] = center[0] + halfSquare;
-        this.vertices[pointIndex + 11] = center[1] + halfSquare;
-
-        pointIndex += 12;
-      }
-    }
   };
 
   private render = () => {
     this.fluid.simulate();
     let nw = this.fluid.get_nw();
     let nh = this.fluid.get_nh();
-    if (dg === 0) {
-      console.log(nh, nw);
-      dg++;
-    }
+    let count = 0;
+    let densIndex = 0;
+
     for (let i = 1; i <= nh; i++) {
       for (let j = 1; j <= nw; j++) {
-        const index = this.fluid.ix(i, j);
-        for (let i = index * 6; i < index * 6 + 6; i++) {
-          // this.densityPerVertex[i] = this.fluid.get_density_at_index(index);
-          this.densityPerVertex[i] = 0.4;
-        }
+        const index = this.fluid.ix(j, i);
+        this.densityPerGridSquare[densIndex] =
+          // this.fluid.get_density_at_index(index);
+          this.densityPerGridSquare[densIndex] = 1.0;
+        densIndex++;
       }
     }
-    const tex = this.rdenerToTexture();
-    this.renderToCanvas(tex);
+
+    this.rdenerToTexture();
+    this.renderToCanvas();
   };
   private draw = () => {
     this.render();
@@ -579,3 +548,12 @@ export default class Renderer {
     requestAnimationFrame(this.draw);
   };
 }
+
+const c = (a: number[], b: number[]) => {
+  const zt1 = [a[0] / b[0], a[1] / b[1]];
+  const ztt = [zt1[0] * 2, zt1[1] * 2];
+  const clp = [ztt[0] - 1.0, 1.0 - ztt[1]];
+  return clp;
+};
+
+console.log(c([128 / 2, 25 / 2], [128, 25]));

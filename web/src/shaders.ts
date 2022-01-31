@@ -10,6 +10,18 @@ vec2 convertToClipSpace(vec2 position, vec2 resolution) {
     return clipSpace;
   }`;
 
+//   const convertToClipSpace = `
+// vec2 convertToClipSpace(vec2 position, vec2 resolution) {
+
+//     vec2 zeroToOne = position / resolution;
+
+//     vec2 zeroToTwo = zeroToOne * 2.0;
+
+//     vec2 clipSpace = vec2(zeroToTwo.x - 1.0, 1.0 - zeroToTwo.y);
+
+//     return clipSpace;
+//   }`;
+
 export const vs1: string = `
 attribute vec2 a_position;
 attribute float a_density;
@@ -22,6 +34,7 @@ ${convertToClipSpace}
 
 void main() {
     gl_Position = vec4(convertToClipSpace(a_position, u_resolution), 0, 1);
+    gl_PointSize = 1.0;
     v_density = a_density;
 }
 `;
@@ -32,7 +45,8 @@ precision mediump float;
 varying float v_density;
 
 void main() {
-  gl_FragColor = vec4(v_density * 1.0, v_density * 0.0, v_density * 1.0, 1);
+  gl_FragColor = vec4(v_density * 1.0, v_density * 0.0, v_density * 1.0, 1.0);
+  // gl_FragColor = vec4(1.0, 0.0, 1.0, 1);
 }
 `;
 
