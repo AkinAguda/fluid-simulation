@@ -33,7 +33,6 @@
 #canvas {
   height: 100%;
   width: 100%;
-  max-width: 100%;
   border: 1px solid var(--accent);
   border-radius: 4px;
   z-index: 1;
@@ -51,6 +50,25 @@
   max-height: 80vh;
 }
 
+#config-dropdown::-webkit-scrollbar {
+  padding: 0 5px;
+  width: 8px;
+  height: 8px;
+}
+#config-dropdown::-webkit-scrollbar-track {
+  background-color: rgb(2, 2, 39);
+  padding: 5px;
+  border-radius: 5px;
+}
+
+#config-dropdown::-webkit-scrollbar-thumb {
+  background: var(--gradient);
+  border-radius: 5px;
+}
+#config-dropdown::-webkit-scrollbar-corner {
+  background-color: var(--pale-light);
+}
+
 #config-trigger {
   min-height: 50px;
   min-width: 50px;
@@ -58,16 +76,28 @@
   width: 50px;
   box-shadow: var(--box-shadow);
   border-radius: 100%;
-  transition: 0.5s;
+  transition: 0.2s;
   background-size: contain;
   background: var(--gradient);
   border: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+#config-trigger > div {
+  height: 3px;
+  width: 100%;
+  background-color: rgb(242, 242, 242);
+  border-radius: 4px;
 }
 
 #config-trigger:hover {
   cursor: pointer;
-  background-color: var(--pale-accent);
-  transform: scale(1.1);
+  opacity: 0.8;
 }
 
 #config-dropdown {
@@ -117,12 +147,11 @@ html {
   justify-content: center;
   flex-direction: column;
   background-color: var(--dark);
+  box-sizing: border-box;
 }
 
 html {
   height: 100vh;
-  margin: 0;
-  padding: 0;
 }
 
 body {
@@ -130,6 +159,7 @@ body {
   padding: 10px 10px;
   box-sizing: border-box;
   height: 100%;
+  width: 100%;
 }
 
 #button-box {

@@ -8,7 +8,6 @@ import("fluid")
     const canvas = document.getElementById("canvas") as HTMLCanvasElement;
     resizeCanvasToDisplaySize(canvas);
     const aspectRatio = canvas.width / canvas.height;
-    console.log(DEFAULT, DEFAULT / aspectRatio);
     const fluidConfig = FluidConfig.new(DEFAULT, DEFAULT / aspectRatio, 0.5);
     let renderer = new Renderer(fluidConfig, 0.6);
     renderer.start();

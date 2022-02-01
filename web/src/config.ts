@@ -140,6 +140,9 @@ export class ConfigBox {
 
   createConfigTrigger = () => {
     this.configTrigger = document.createElement("button");
+    for (let i = 0; i < 3; i++) {
+      this.configTrigger.appendChild(document.createElement("div"));
+    }
     this.configTrigger.setAttribute("id", "config-trigger");
     this.configTrigger.addEventListener("click", this.toggleConfig);
     this.configWrapper.appendChild(this.configTrigger);
