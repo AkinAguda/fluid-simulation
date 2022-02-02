@@ -33,7 +33,7 @@ precision mediump float;
 varying float v_density;
 
 void main() {
-  gl_FragColor = vec4(v_density * 1.0, v_density * 0.0, v_density * 1.0, 1.0);
+  gl_FragColor = vec4(v_density * v_density, v_density * 0.0, v_density * 1.0, 1.0);
 }
 `;
 

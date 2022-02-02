@@ -15,7 +15,7 @@ export default class Renderer {
   private canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;
   private rangeResetHandlers: Array<() => void> = [];
-  private defaultAddedDensity = 10;
+  private defaultAddedDensity = 5;
   private defaultAddedVelocity = 50;
   private addedDensity = this.defaultAddedDensity;
   private addedVelocity = this.defaultAddedVelocity;
