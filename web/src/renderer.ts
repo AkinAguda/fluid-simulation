@@ -11,14 +11,12 @@ import {
   setRectangle,
 } from "./utils";
 
-let dg = 0;
-
 export default class Renderer {
   private canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;
   private rangeResetHandlers: Array<() => void> = [];
   private defaultAddedDensity = 10;
-  private defaultAddedVelocity = 200;
+  private defaultAddedVelocity = 50;
   private addedDensity = this.defaultAddedDensity;
   private addedVelocity = this.defaultAddedVelocity;
   private mode = 0;
@@ -85,7 +83,7 @@ export default class Renderer {
           title: "Added Velocity",
           value: this.addedVelocity,
           min: 0,
-          max: 2000,
+          max: 500,
           step: 50,
           onInput: (value) => {
             this.addedVelocity = value;

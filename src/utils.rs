@@ -91,12 +91,30 @@ macro_rules! set_bnd {
 #[macro_export]
 macro_rules! advect {
     ($nw:expr, $nh:expr, $b:expr, $property:expr, $prev_property:expr, $velocity_x:expr, $velocity_y:expr, $dt:expr) => {
+        let fnw = $nw as f32;
+        let fnh = $nh as f32;
         for j in 1..$nh + 1 {
             for i in 1..$nw + 1 {
                 let index = pure_ix_fn(i, j, $nw, $nh) as usize;
 
-                let inital_pos_x = i as f32 - $velocity_x[pure_ix_fn(i, j, $nw, $nh)] * $dt;
-                let inital_pos_y = j as f32 - $velocity_y[pure_ix_fn(i, j, $nw, $nh)] * $dt;
+                let mut inital_pos_x = i as f32 - $velocity_x[pure_ix_fn(i, j, $nw, $nh)] * $dt;
+                let mut inital_pos_y = j as f32 - $velocity_y[pure_ix_fn(i, j, $nw, $nh)] * $dt;
+
+                if (inital_pos_x < 0.5) {
+                    inital_pos_x = 0.5;
+                }
+
+                if (inital_pos_x > fnw + 0.5) {
+                    inital_pos_x = fnw + 0.5;
+                }
+
+                if (inital_pos_y < 0.5) {
+                    inital_pos_y = 0.5;
+                }
+
+                if (inital_pos_y > fnh + 0.5) {
+                    inital_pos_y = fnh + 0.5;
+                }
 
                 let imaginary_x = inital_pos_x.fract();
                 let imaginary_y = inital_pos_y.fract();

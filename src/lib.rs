@@ -191,8 +191,8 @@ impl Fluid {
             BoundaryType::VERTICAL,
             self.velocity_x,
             self.initial_velocity_x,
-            self.velocity_x,
-            self.velocity_y,
+            self.initial_velocity_x,
+            self.initial_velocity_y,
             self.dt
         );
 
@@ -202,11 +202,10 @@ impl Fluid {
             BoundaryType::HORIZONTAL,
             self.velocity_y,
             self.initial_velocity_y,
-            self.velocity_x,
-            self.velocity_y,
+            self.initial_velocity_x,
+            self.initial_velocity_y,
             self.dt
         );
-
         project!(
             self.config.nw,
             self.config.nh,
