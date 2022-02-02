@@ -1,6 +1,6 @@
 # Interactive fluid simulation with [navier stokes equations](https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations)<br>
 
-![demo gif](https://res.cloudinary.com/nettik-technologies/image/upload/v1643842777/unop.gif)
+![demo gif](https://res.cloudinary.com/nettik-technologies/image/upload/v1643842639/ezgif-3-060a179dd2.gif)
 
 Live Demo https://akin-fluid-simulation.netlify.app/
 
