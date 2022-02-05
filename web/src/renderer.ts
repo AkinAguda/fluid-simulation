@@ -40,7 +40,6 @@ export default class Renderer {
   constructor(canvas: HTMLCanvasElement) {
     resizeCanvasToDisplaySize(canvas);
     const [width, height] = getDisplayDimensions(canvas.width, canvas.height);
-    // const initialDiffusion = fluidConfig.get_diffusion();
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl");
     const fluidConfig = FluidConfig.new(width, height, c.DEFAULT_DIFFUSION);
