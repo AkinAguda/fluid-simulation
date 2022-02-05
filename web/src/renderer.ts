@@ -9,16 +9,17 @@ import {
   getMultipliers,
   getClientValues,
   setRectangle,
+  resizeCanvasToDisplaySize,
+  getDisplayDimensions,
 } from "./utils";
+import * as c from "./constants";
 
 export default class Renderer {
   private canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;
   private rangeResetHandlers: Array<() => void> = [];
-  private defaultAddedDensity = 5;
-  private defaultAddedVelocity = 50;
-  private addedDensity = this.defaultAddedDensity;
-  private addedVelocity = this.defaultAddedVelocity;
+  private addedDensity = c.DEFAULT_ADDED_DENSITY;
+  private addedVelocity = c.DEFAULT_ADDED_VELOCITY;
   private mode = 0;
   private vertices: Float32Array;
   private fluid: Fluid;
@@ -36,12 +37,14 @@ export default class Renderer {
   };
   private webglData: ReturnType<typeof this.initializeWebGL>;
 
-  constructor(fluidConfig: FluidConfig, dt: number) {
-    const initialDiffusion = fluidConfig.get_diffusion();
+  constructor(canvas: HTMLCanvasElement) {
+    resizeCanvasToDisplaySize(canvas);
+    const [width, height] = getDisplayDimensions(canvas.width, canvas.height);
+    // const initialDiffusion = fluidConfig.get_diffusion();
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
     this.gl = this.canvas.getContext("webgl");
-
-    this.fluid = Fluid.new(fluidConfig, dt);
+    const fluidConfig = FluidConfig.new(width, height, c.DEFAULT_DIFFUSION);
+    this.fluid = Fluid.new(fluidConfig, c.DEFAULT_TIME_STEP);
     let nw = this.fluid.get_nw();
     let nh = this.fluid.get_nh();
     this.vertices = new Float32Array(nw * nh * 2);
@@ -53,57 +56,57 @@ export default class Renderer {
         {
           key: "dt",
           title: "Time Step",
-          value: dt,
-          min: 0.0,
-          max: 2.0,
-          step: 0.1,
+          value: c.DEFAULT_TIME_STEP,
+          min: c.DEFAULT_MIN_TIME_STEP,
+          max: c.DEFAULT_MAX_TIME_STEP,
+          step: c.DEFAULT_TIME_STEP_STEP,
           onInput: (value) => {
             this.fluid.set_dt(value);
           },
         },
-        this.onRangeInstance(dt)
+        this.onRangeInstance(c.DEFAULT_TIME_STEP)
       ),
       new RangeConfig(
         {
           key: "addedD",
           title: "Added Density",
           value: this.addedDensity,
-          min: 0,
-          max: 40,
+          min: c.DEFAULT_ADDED_DENSITY_MIN,
+          max: c.DEFAULT_ADDED_DENSITY_MAX,
           step: 1,
           onInput: (value) => {
             this.addedDensity = value;
           },
         },
-        this.onRangeInstance(this.defaultAddedDensity)
+        this.onRangeInstance(c.DEFAULT_ADDED_DENSITY)
       ),
       new RangeConfig(
         {
           key: "addedV",
           title: "Added Velocity",
           value: this.addedVelocity,
-          min: 0,
-          max: 500,
-          step: 50,
+          min: c.DEFAULT_ADDED_VELOCITY_MIN,
+          max: c.DEFAULT_ADDED_VELOCITY_MAX,
+          step: c.DEFAULT_ADDED_VELOCITY_STEP,
           onInput: (value) => {
             this.addedVelocity = value;
           },
         },
-        this.onRangeInstance(this.defaultAddedVelocity)
+        this.onRangeInstance(c.DEFAULT_ADDED_VELOCITY)
       ),
       new RangeConfig(
         {
           key: "diff",
           title: "Diffusion",
-          value: round(initialDiffusion, 100),
-          min: 0.0,
-          max: 2.0,
-          step: 0.1,
+          value: round(c.DEFAULT_DIFFUSION, 100),
+          min: c.DEFAULT_MIN_DIFFUSION,
+          max: c.DEFAULT_MAX_DIFFUSION,
+          step: c.DEFAULT_DIFFUSION_STEP,
           onInput: (value) => {
             this.fluid.set_config_diffusion(value);
           },
         },
-        this.onRangeInstance(round(initialDiffusion, 100))
+        this.onRangeInstance(round(c.DEFAULT_DIFFUSION, 100))
       ),
       new ButtonConfig({
         title: "Clear",

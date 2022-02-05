@@ -138,3 +138,20 @@ export const setRectangle = (
     gl.STATIC_DRAW
   );
 };
+
+export const getDisplayDimensions = (
+  width: number,
+  height: number
+): number[] => {
+  let count = 256;
+  if (Math.max(width, height) / Math.min(width, height) <= 1.5) {
+    count = 180;
+  }
+  if (width > height) {
+    return [count, count / (width / height)];
+  } else if (height > width) {
+    return [count / (height / width), count];
+  } else {
+    return [width, height];
+  }
+};
