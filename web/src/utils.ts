@@ -143,7 +143,7 @@ export const getDisplayDimensions = (
   width: number,
   height: number
 ): number[] => {
-  let count = 256;
+  let count = 220;
   if (Math.max(width, height) / Math.min(width, height) <= 1.5) {
     count = 180;
   }
