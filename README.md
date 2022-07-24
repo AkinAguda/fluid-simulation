@@ -2,7 +2,7 @@
 
 ![demo gif](https://res.cloudinary.com/nettik-technologies/image/upload/v1643842639/ezgif-3-060a179dd2.gif)
 
-Live Demo https://akin-fluid-simulation.netlify.app/
+Live Demo https://akin-fluid-simulation-rust.netlify.app/
 
 ## Resources<br>
 
